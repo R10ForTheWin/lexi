@@ -1,0 +1,1526 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<title>Lexi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* ===============================================================
+   Lexi ? built from the airport glass wall in Style/. Each lobe is a
+   warped lattice printed IN colour on backlit white glass; the white
+   is the gaps between threads, not paint over them. Overlaps multiply.
+   Palette sampled off the panels: ultramarine, cyan, amber, stone,
+   cream, and the navy beam that caps every bay.
+   =============================================================== */
+:root{
+  --paper:#F7F7F6; --surface:#FFFFFF; --surface-2:#F0F0EE; --sunk:#E6E6E4;
+  --line:#DFDFDC; --line-soft:#EDEDEA;
+  --navy:#1B2A5C;
+  --text:#1B2340; --text-soft:#5A6279; --text-dim:#8D94A6;
+  --ultra:#2B4FC8; --ultra-wash:rgba(43,79,200,.08);
+  --cyan:#3FA9C9; --amber:#E0A03A; --stone:#9BA2AA; --cream:#E6DEBE;
+  --good:#2F8A5E; --good-wash:rgba(47,138,94,.10);
+  --bad:#D2542A;  --bad-wash:rgba(210,84,42,.10);
+  --ink-on-accent:#FFFFFF;
+  --r:18px; --r-sm:12px;
+  --shadow:0 1px 2px rgba(27,42,92,.05), 0 14px 34px -18px rgba(27,42,92,.28);
+}
+/* Night: the panels are backlit glass, so dark means the light behind
+   the wall goes down ? navy ground, threads still luminous. */
+:root[data-theme="dark"]{
+  --paper:#0F1730; --surface:#16203F; --surface-2:#1D294D; --sunk:#0A1124;
+  --line:#2B3866; --line-soft:#1A2445;
+  --navy:#0A1124;
+  --text:#EAEDF5; --text-soft:#A3ACC4; --text-dim:#6E7899;
+  --ultra:#6E92F0; --ultra-wash:rgba(110,146,240,.14);
+  --cyan:#59C6E0; --amber:#F0BC63; --stone:#9BA5B8; --cream:#D8CFA8;
+  --good:#5FC08A; --good-wash:rgba(95,192,138,.14);
+  --bad:#F08A5D;  --bad-wash:rgba(240,138,93,.13);
+  --ink-on-accent:#0F1730;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 14px 34px -18px rgba(0,0,0,.7);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+  --paper:#0F1730; --surface:#16203F; --surface-2:#1D294D; --sunk:#0A1124;
+  --line:#2B3866; --line-soft:#1A2445;
+  --navy:#0A1124;
+  --text:#EAEDF5; --text-soft:#A3ACC4; --text-dim:#6E7899;
+  --ultra:#6E92F0; --ultra-wash:rgba(110,146,240,.14);
+  --cyan:#59C6E0; --amber:#F0BC63; --stone:#9BA5B8; --cream:#D8CFA8;
+  --good:#5FC08A; --good-wash:rgba(95,192,138,.14);
+  --bad:#F08A5D;  --bad-wash:rgba(240,138,93,.13);
+  --ink-on-accent:#0F1730;
+  --shadow:0 1px 2px rgba(0,0,0,.45), 0 14px 34px -18px rgba(0,0,0,.7);
+  }
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper); color:var(--text); font-family:'Archivo',system-ui,sans-serif;
+  font-weight:400; -webkit-font-smoothing:antialiased; overflow-x:hidden}
+#field{min-height:100vh; display:flex; justify-content:center; background:var(--paper)}
+/* The wall is the ground the whole app sits on, not decoration inside
+   a box. Two layers of pale lobes drift against each other; everything
+   above is translucent so the lattice reads through. */
+#weave{position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0}
+#weave canvas{position:absolute; inset:0; width:100%; height:100%}
+#wall{transition:opacity .6s}
+#app{width:100%; max-width:430px; min-height:100vh; position:relative; z-index:1; overflow:hidden;
+  background:color-mix(in srgb, var(--paper) 58%, transparent)}
+@media (min-width:462px){ #app{box-shadow:0 0 0 1px var(--line-soft)} }
+.num{font-variant-numeric:tabular-nums}
+.label{font-family:'IBM Plex Mono',monospace; font-size:9.5px; font-weight:400;
+  letter-spacing:.22em; text-transform:uppercase; color:var(--text-dim)}
+.screen{display:none; flex-direction:column; min-height:100vh}
+.screen.active{display:flex}
+
+/* -- HOME ? deliberately underfilled ------------------------- */
+.home-pad{padding:max(44px,env(safe-area-inset-top,44px)) 26px 30px; flex:1; display:flex; flex-direction:column; gap:30px}
+.brand{display:flex; align-items:center; justify-content:space-between}
+.brand h1{font-family:'Instrument Serif',Georgia,serif; font-weight:400; font-size:38px; line-height:1; letter-spacing:-.012em}
+.brand h1 em{font-style:italic; color:var(--ultra)}
+.icon-btn{background:none; border:1px solid var(--line); color:var(--text-dim); width:34px; height:34px;
+  border-radius:50%; cursor:pointer; display:grid; place-items:center; transition:border-color .45s, color .45s}
+.icon-btn:hover{border-color:var(--ultra); color:var(--ultra)}
+
+.streak{display:flex; flex-direction:column; gap:15px; padding:18px 20px; border-radius:var(--r);
+  border:1px solid var(--line); border-top:7px solid var(--navy); box-shadow:var(--shadow);
+  background:color-mix(in srgb, var(--surface) 78%, transparent);
+  -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px)}
+.streak-top{display:flex; align-items:center; gap:13px}
+.streak-n{font-family:'Instrument Serif',Georgia,serif; font-size:46px; line-height:.86;
+  letter-spacing:-.025em; color:var(--amber)}
+.streak-l{font-size:13.5px; font-weight:300; color:var(--text-soft); line-height:1.4}
+.streak-l b{font-weight:500; color:var(--text)}
+.week{display:flex; gap:6px}
+.day{flex:1; display:flex; flex-direction:column; align-items:center; gap:6px}
+.day i{width:100%; height:28px; border-radius:8px; display:grid; place-items:center;
+  background:var(--surface-2); border:1px solid var(--line); color:transparent}
+.day.on i{background:var(--amber); border-color:var(--amber); color:var(--surface)}
+.day.now i{border-color:var(--ultra); border-width:1.5px}
+.day span{font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.12em; color:var(--text-dim)}
+.streak-msg{font-size:12.5px; font-weight:300; color:var(--text-dim); line-height:1.5}
+.streak-msg b{color:var(--text-soft); font-weight:500}
+.glass{background:color-mix(in srgb, var(--surface) 74%, transparent);
+  -webkit-backdrop-filter:blur(7px) saturate(1.04); backdrop-filter:blur(7px) saturate(1.04)}
+/* A caption plate, not a gradient over the artwork - the wall stays
+   uninterrupted and the numbers stay readable, which a scrim over
+   dense linework can never quite manage. */
+
+/* Four games, four decks. The hue stripe is the same colour that entry
+   wears in the mural, so the menu and the wall agree about what a
+   Concept is. */
+.games{display:flex; flex-direction:column; gap:8px}
+.game{display:flex; align-items:stretch; gap:0; padding:0; cursor:pointer; overflow:hidden;
+  border:1px solid var(--line); border-radius:var(--r-sm); font-family:inherit; text-align:left;
+  background:color-mix(in srgb, var(--surface) 74%, transparent);
+  -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px);
+  transition:border-color .4s, background .4s}
+.game:hover{border-color:var(--ultra); background:var(--surface)}
+.game .stripe{width:5px; flex:none}
+.game .gbody{flex:1; padding:14px 16px; min-width:0}
+.game .gn{font-size:16px; font-weight:500; letter-spacing:.005em}
+.game .gbar{height:3px; border-radius:99px; background:var(--surface-2); margin-top:11px; overflow:hidden; display:flex}
+.game .gfill{height:100%}
+.game .gright{display:flex; flex-direction:column; align-items:flex-end; justify-content:center;
+  padding:14px 16px 14px 8px; gap:3px; flex:none}
+.game .gnum{font-family:'IBM Plex Mono',monospace; font-size:17px; font-variant-numeric:tabular-nums; letter-spacing:-.02em}
+.game .glbl{font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.16em;
+  text-transform:uppercase; color:var(--text-dim)}
+.key-row{display:flex; flex-wrap:wrap; gap:9px 18px}
+.key{display:flex; align-items:center; gap:7px; font-size:11.5px; font-weight:300; color:var(--text-soft)}
+.key i{width:10px; height:10px; border-radius:3px; display:block}
+.key b{font-weight:500; color:var(--text)}
+
+.stat{background:color-mix(in srgb, var(--surface) 74%, transparent); padding:15px 13px;
+  -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px)}
+.stat-v{font-family:'IBM Plex Mono',monospace; font-size:19px; font-weight:400; font-variant-numeric:tabular-nums; letter-spacing:-.03em}
+.stat-l{font-size:9.5px; color:var(--text-dim); margin-top:6px; line-height:1.4; font-weight:300}
+
+.btn{width:100%; border:0; border-radius:var(--r); cursor:pointer; font-family:inherit;
+  padding:17px; font-size:16px; font-weight:400; letter-spacing:.01em; transition:filter .4s, border-color .4s}
+.btn-go{background:var(--ultra); color:var(--ink-on-accent)}
+.btn-go:hover{filter:brightness(1.1)}
+.btn-ghost{background:transparent; color:var(--text-soft); border:1px solid var(--line)}
+.btn-ghost:hover{border-color:var(--ultra); color:var(--ultra)}
+.btn-sm{padding:13px; font-size:13.5px; border-radius:var(--r-sm)}
+.quiet{font-size:12px; font-weight:300; color:var(--text-dim); line-height:1.6}
+.quiet b{color:var(--text-soft); font-weight:500}
+.seam{height:1px; background:var(--line-soft)}
+
+/* -- RUN ------------------------------------------------------ */
+.run-top{padding:max(18px,env(safe-area-inset-top,18px)) 26px 0}
+/* A run is four minutes, but there is never a screen you cannot leave. */
+.run-head{display:flex; align-items:center; gap:11px; min-height:30px; margin-bottom:14px}
+.exit{background:none; border:1px solid var(--line); color:var(--text-dim); width:28px; height:28px;
+  border-radius:50%; cursor:pointer; display:grid; place-items:center; flex:none;
+  transition:border-color .4s, color .4s}
+.exit:hover{border-color:var(--bad); color:var(--bad)}
+.confirm{display:flex; align-items:center; gap:8px; width:100%}
+.confirm .q{font-size:13px; font-weight:300; color:var(--text-soft); margin-right:auto}
+.mini{font-family:inherit; font-size:12px; padding:6px 13px; border-radius:99px; cursor:pointer;
+  border:1px solid var(--line); background:transparent; color:var(--text-soft);
+  transition:border-color .3s, color .3s}
+.mini:hover{border-color:var(--ultra); color:var(--ultra)}
+.mini.leave:hover{border-color:var(--bad); color:var(--bad)}
+/* combo as a single thread that gains ply ? never flashes, just thickens */
+.rail{height:7px; display:flex; align-items:center; margin-bottom:13px}
+.rule{width:100%; height:1px; border-radius:99px; background:var(--line)}
+.run-meta{display:flex; align-items:center; justify-content:space-between; gap:14px}
+.pips{display:flex; gap:6px}
+.pip{width:15px; height:2px; border-radius:99px; background:var(--sunk)}
+.combo{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--text-dim); font-variant-numeric:tabular-nums}
+.score{font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-variant-numeric:tabular-nums; color:var(--text-soft)}
+
+.run-body{flex:1; display:flex; flex-direction:column; padding:26px 26px 0; gap:18px}
+.kind{display:flex; align-items:center; gap:9px}
+.kind .dot{width:6px; height:6px; border-radius:50%}
+.tier{margin-left:auto; font-family:'IBM Plex Mono',monospace; font-size:8.5px; letter-spacing:.18em;
+  text-transform:uppercase; padding:4px 9px; border-radius:99px; border:1px solid currentColor}
+.card{position:relative; border:1px solid var(--line); border-radius:var(--r);
+  padding:24px 22px; box-shadow:var(--shadow); overflow:hidden;
+  background:color-mix(in srgb, var(--surface) 78%, transparent);
+  -webkit-backdrop-filter:blur(9px) saturate(1.05); backdrop-filter:blur(9px) saturate(1.05)}
+.card > *{position:relative}
+.headword{font-family:'Instrument Serif',Georgia,serif; font-size:40px; line-height:1.03; letter-spacing:-.02em; word-break:break-word}
+.meta{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin-top:8px}
+.pron{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ultra)}
+.pos{font-family:'Instrument Serif',serif; font-style:italic; font-size:15px; color:var(--text-dim)}
+.defn{font-size:16px; font-weight:300; line-height:1.6; margin-top:14px}
+.sent{font-size:17px; font-weight:300; line-height:1.75}
+.sent.scene{color:var(--text-soft); font-style:italic; font-family:'Instrument Serif',Georgia,serif;
+  font-size:21px; line-height:1.55; font-weight:400}
+.blank{display:inline-block; min-width:82px; text-align:center; padding:0 7px;
+  border-bottom:1.5px solid var(--ultra); color:transparent;
+  font-family:'Instrument Serif',Georgia,serif; font-size:20px}
+.blank.shown{color:var(--ultra)}
+.blank.shown.bad{color:var(--bad); border-color:var(--bad)}
+
+.opts{display:flex; flex-direction:column; gap:9px; padding:6px 26px max(24px,env(safe-area-inset-bottom,24px)); margin-top:auto}
+.opt{background:color-mix(in srgb, var(--surface) 70%, transparent);
+  -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px);
+  border:1px solid var(--line); border-radius:var(--r-sm);
+  padding:15px 16px; text-align:left; font-family:inherit; font-size:15px; font-weight:300; color:var(--text);
+  cursor:pointer; display:flex; align-items:center; gap:12px; line-height:1.45;
+  transition:border-color .4s, background .4s}
+.opt:hover:not(:disabled){border-color:var(--ultra)}
+.opt:disabled{cursor:default}
+.opt .k{font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--text-dim); border:1px solid var(--line);
+  border-radius:5px; width:20px; height:20px; display:grid; place-items:center; flex:none}
+.opt.right{border-color:var(--good); background:var(--good-wash)}
+.opt.right .k{border-color:var(--good); color:var(--good)}
+.opt.wrong{border-color:var(--bad); background:var(--bad-wash)}
+.opt.wrong .k{border-color:var(--bad); color:var(--bad)}
+.opt-term{font-family:'Instrument Serif',Georgia,serif; font-size:21px; font-weight:400; letter-spacing:-.01em}
+
+.slots{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; min-height:44px; align-items:center}
+.slot{width:28px; height:40px; border-bottom:1.5px solid var(--line); display:grid; place-items:center;
+  font-family:'Instrument Serif',Georgia,serif; font-size:24px; color:var(--ultra)}
+.slot.has{border-color:var(--ultra)}
+.slot.right{border-color:var(--good); color:var(--good)}
+.slot.wrong{border-color:var(--bad); color:var(--bad)}
+.tiles{display:flex; flex-wrap:wrap; gap:7px; justify-content:center}
+.tile{width:38px; height:44px; border-radius:10px; border:1px solid var(--line);
+  background:color-mix(in srgb, var(--surface) 70%, transparent);
+  -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px);
+  color:var(--text); cursor:pointer; font-family:'Instrument Serif',Georgia,serif; font-size:22px;
+  transition:border-color .3s}
+.tile:hover:not(.used){border-color:var(--ultra)}
+.tile.used{opacity:.16; pointer-events:none}
+.flyer{position:fixed; z-index:99; font-family:'Instrument Serif',Georgia,serif; font-size:22px;
+  color:var(--ultra); pointer-events:none; display:grid; place-items:center}
+.type-in{width:100%; background:color-mix(in srgb, var(--surface) 74%, transparent);
+  -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px); border:1px solid var(--line); border-radius:var(--r-sm);
+  padding:15px; font-family:'Instrument Serif',Georgia,serif; font-size:23px; color:var(--text); text-align:center}
+.type-in:focus{outline:none; border-color:var(--ultra)}
+
+/* What you actually wanted to read, put on screen and left there. */
+.reveal{margin-top:18px; padding-top:16px; border-top:1px solid var(--line-soft)}
+.reveal .rw{font-family:'Instrument Serif',Georgia,serif; font-size:27px; line-height:1.1; letter-spacing:-.015em}
+.reveal .rp{font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--ultra); margin-left:8px}
+.reveal .rpos{font-family:'Instrument Serif',serif; font-style:italic; font-size:14px; color:var(--text-dim); margin-left:7px}
+.reveal .rd{font-size:16px; font-weight:300; line-height:1.55; margin-top:8px}
+.verdict{display:flex; align-items:center; gap:11px; padding:13px 15px; border-radius:var(--r-sm);
+  font-size:13px; font-weight:300; line-height:1.55}
+.verdict.good{background:var(--good-wash); color:var(--good); border:1px solid var(--good)}
+.verdict.bad{background:var(--bad-wash); color:var(--bad); border:1px solid var(--bad)}
+.verdict b{font-weight:500}
+.verdict .pts{margin-left:auto; font-family:'IBM Plex Mono',monospace; white-space:nowrap}
+
+/* -- SUMMARY -------------------------------------------------- */
+.sum-pad{padding:max(48px,env(safe-area-inset-top,48px)) 26px 30px; flex:1; display:flex; flex-direction:column; gap:26px}
+.sum-n{font-family:'Instrument Serif',Georgia,serif; font-size:78px; line-height:.86; color:var(--ultra);
+  font-variant-numeric:tabular-nums; letter-spacing:-.03em}
+.sum-grid{display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line);
+  border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden}
+.miss-list{display:flex; flex-direction:column; gap:1px; background:var(--line);
+  border:1px solid var(--line); border-radius:var(--r-sm); overflow:hidden}
+.miss{background:color-mix(in srgb, var(--surface) 76%, transparent); padding:13px 15px;
+  -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px); display:flex; align-items:baseline; gap:12px}
+.miss .t{font-family:'Instrument Serif',Georgia,serif; font-size:19px}
+.miss .d{font-size:12px; font-weight:300; color:var(--text-soft); margin-left:auto; text-align:right}
+
+/* -- COLLECTION / DETAIL -------------------------------------- */
+.head{padding:max(30px,env(safe-area-inset-top,30px)) 26px 16px; display:flex; align-items:center; gap:14px}
+.back{background:none; border:0; color:var(--text-dim); cursor:pointer; padding:4px; display:grid; place-items:center; transition:color .4s}
+.back:hover{color:var(--ultra)}
+.coll-body{flex:1; overflow-y:auto; padding:0 0 max(30px,env(safe-area-inset-bottom,30px))}
+
+.coll-inner{padding:24px 26px 0}
+.tier-head{display:flex; align-items:center; gap:12px; margin:28px 0 13px}
+.tier-head .r2{flex:1; height:1px; background:var(--line-soft)}
+.wall{display:flex; flex-wrap:wrap; gap:7px}
+.chip{display:flex; align-items:center; gap:9px; padding:8px 13px 8px 9px; background:transparent;
+  border:1px solid var(--line); border-radius:99px; cursor:pointer; font-family:inherit; font-size:14px;
+  font-weight:300; color:var(--text); transition:border-color .4s, background .4s}
+.chip:hover{border-color:var(--ultra); background:color-mix(in srgb, var(--surface) 70%, transparent)}
+.dotc{width:11px; height:11px; border-radius:4px; flex:none; border:1px solid var(--line)}
+.det{flex:1; padding:22px 26px max(30px,env(safe-area-inset-bottom,30px)); display:flex; flex-direction:column; gap:22px; overflow-y:auto}
+.det-w{font-family:'Instrument Serif',Georgia,serif; font-size:46px; line-height:1.02; letter-spacing:-.024em}
+.det-s{font-size:17px; font-weight:400; line-height:1.62; color:var(--text-soft); font-style:italic;
+  font-family:'Instrument Serif',Georgia,serif; border-left:2px solid var(--amber); padding-left:16px}
+.ranks{display:flex; gap:1px; background:var(--line); border:1px solid var(--line); border-radius:9px; overflow:hidden}
+.rank{flex:1; text-align:center; padding:10px 3px;
+  background:color-mix(in srgb, var(--surface) 76%, transparent);
+  font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:.14em; text-transform:uppercase; color:var(--text-dim)}
+.rank.on{background:var(--ultra-wash); color:var(--ultra)}
+.note{background:color-mix(in srgb, var(--surface) 72%, transparent);
+  -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px);
+  border:1px solid var(--line); border-left:2px solid var(--amber);
+  border-radius:var(--r-sm); padding:14px 16px; font-size:13.5px; font-weight:300; line-height:1.65; color:var(--text-soft)}
+.note b{color:var(--text); font-weight:500}
+
+/* -- ADD -----------------------------------------------------
+   The whole point is that catching a word costs nothing, so this
+   screen is three fields deep and the only required one is the word
+   itself. */
+.brand-btns{display:flex; align-items:center; gap:9px}
+/* Labelled, and carrying the accent - the one thing on this screen
+   that is asking to be pressed. */
+.add-pill{display:flex; align-items:center; gap:6px; flex:none; cursor:pointer;
+  padding:9px 15px 9px 12px; border-radius:99px; font-family:inherit;
+  font-size:13px; font-weight:400; letter-spacing:.005em; white-space:nowrap;
+  border:1px solid var(--ultra); color:var(--ultra); background:var(--ultra-wash);
+  transition:background .4s, filter .4s}
+.add-pill:hover{background:var(--ultra); color:var(--ink-on-accent)}
+.add-pill svg{flex:none}
+.add-body{flex:1; padding:6px 26px max(30px,env(safe-area-inset-bottom,30px));
+  display:flex; flex-direction:column; gap:24px; overflow-y:auto}
+.add-field{display:flex; flex-direction:column; gap:10px}
+.add-in{width:100%; background:color-mix(in srgb, var(--surface) 74%, transparent);
+  -webkit-backdrop-filter:blur(7px); backdrop-filter:blur(7px);
+  border:1px solid var(--line); border-radius:var(--r-sm); padding:14px 15px;
+  font-family:'Instrument Serif',Georgia,serif; font-size:24px; color:var(--text)}
+.add-in::placeholder{color:var(--text-dim); opacity:.5}
+.add-in:focus{outline:none; border-color:var(--ultra)}
+.add-note{font-family:'Archivo',system-ui,sans-serif; font-size:14px; font-weight:300;
+  line-height:1.55; resize:vertical}
+.add-warn{font-size:12.5px; font-weight:300; color:var(--bad); line-height:1.5}
+.add-warn b{font-weight:500}
+.opt-lbl{text-transform:none; letter-spacing:0; font-family:'Archivo',system-ui,sans-serif;
+  font-size:11px; font-weight:300}
+.kinds{display:flex; flex-wrap:wrap; gap:7px}
+.kind-opt{display:flex; align-items:center; gap:8px; padding:9px 14px 9px 10px; background:transparent;
+  border:1px solid var(--line); border-radius:99px; cursor:pointer; font-family:inherit;
+  font-size:13.5px; font-weight:300; color:var(--text-soft); transition:border-color .4s, color .4s}
+.kind-opt:hover{border-color:var(--ultra)}
+.kind-opt.on{border-color:var(--ultra); color:var(--text)}
+.kind-opt .dotc{opacity:.3; transition:opacity .4s}
+.kind-opt.on .dotc{opacity:1}
+.miss.q{align-items:center}
+.used-form{display:flex; flex-direction:column; gap:10px}
+.used-form .add-in{font-family:'Archivo',system-ui,sans-serif; font-size:15px;
+  font-weight:300; padding:13px 14px}
+.drop{margin-left:auto; background:none; border:0; color:var(--text-dim); cursor:pointer;
+  font-family:inherit; font-size:20px; line-height:1; padding:0 2px; transition:color .3s}
+.drop:hover{color:var(--bad)}
+.q-note{margin:-4px 0 13px}
+.q-paste{width:100%; margin-top:10px; background:var(--sunk); border:1px solid var(--line);
+  border-radius:var(--r-sm); padding:12px; font-family:'IBM Plex Mono',monospace;
+  font-size:11px; line-height:1.5; color:var(--text-soft); resize:vertical}
+
+:focus-visible{outline:1.5px solid var(--ultra); outline-offset:3px; border-radius:4px}
+</style>
+
+<div id="weave"><canvas id="wall3d"></canvas><canvas id="wall"></canvas></div>
+<div id="field"><div id="app">
+
+  <section class="screen active" id="s-home">
+    <div class="home-pad">
+      <div class="brand" data-in>
+        <h1>L<em>e</em>xi</h1>
+        <div class="brand-btns">
+          <button class="add-pill" id="addBtn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Add a word
+          </button>
+          <button class="icon-btn" id="themeBtn" aria-label="Switch theme">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="streak" data-in>
+        <div class="streak-top">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="1.5" stroke-linejoin="round"><path d="M12 2.5c.6 3.2-1.1 4.6-2.6 6C7.6 10.1 6 11.6 6 14.5a6 6 0 0 0 12 0c0-2.2-.9-3.9-2-5.2-.4 1-1.1 1.7-1.9 2 .5-2.6-.5-6.6-2.1-8.8z"/></svg>
+          <div class="streak-n num" id="stN">0</div>
+          <div class="streak-l" id="stL">day streak</div>
+        </div>
+        <div class="week" id="week"></div>
+        <p class="streak-msg" id="stMsg"></p>
+      </div>
+      <p class="label" data-in style="margin-bottom:-12px">Expand your knowledge of</p>
+      <div class="games" id="games" data-in></div>
+      <div style="margin-top:auto" data-in>
+        <button class="btn btn-ghost btn-sm" id="collBtn">The collection</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="s-run">
+    <div class="run-top">
+      <div class="run-head" id="runHead"></div>
+      <div class="rail"><div class="rule" id="rule"></div></div>
+      <div class="run-meta">
+        <div class="pips" id="pips"></div>
+        <div class="combo" id="comboEl">&times;1.0</div>
+        <div class="score num" id="scoreEl">0</div>
+      </div>
+    </div>
+    <div class="run-body">
+      <div class="kind"><span class="dot" id="kindDot"></span><span class="label" id="kindEl"></span><span class="tier" id="tierEl"></span></div>
+      <div id="qCard"></div>
+    </div>
+    <div class="opts" id="qOpts"></div>
+  </section>
+
+  <section class="screen" id="s-sum">
+    <div class="sum-pad">
+      <div data-sum><div class="label">Run score</div><div class="sum-n num" id="sumN">0</div>
+        <div class="quiet" style="margin-top:12px;font-size:13.5px" id="sumV"></div></div>
+      <div class="sum-grid" data-sum>
+        <div class="stat"><div class="stat-v num" id="sumAcc">0/6</div><div class="stat-l">Correct</div></div>
+        <div class="stat"><div class="stat-v num" id="sumC">&times;1.0</div><div class="stat-l">Best combo</div></div>
+      </div>
+      <div id="sumStreak" data-sum></div>
+      <div id="sumMoved" data-sum></div>
+      <div id="sumMiss" data-sum></div>
+      <div style="margin-top:auto; display:flex; flex-direction:column; gap:10px" data-sum>
+        <button class="btn btn-go" id="againBtn">Run again</button>
+        <button class="btn btn-ghost btn-sm" id="homeBtn">Home</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="s-coll">
+    <div class="head">
+      <button class="back" data-go="s-home" aria-label="Back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div><div class="label">The collection</div><div class="quiet" style="margin-top:4px" id="collSub"></div></div>
+      <button class="icon-btn" data-go="s-home" style="margin-left:auto" aria-label="Home">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/></svg>
+      </button>
+    </div>
+    <div class="coll-body">
+      <div class="coll-inner" id="collInner"></div>
+    </div>
+  </section>
+
+  <section class="screen" id="s-det">
+    <div class="head">
+      <button class="back" data-go="s-coll" aria-label="Back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div class="label">Entry</div>
+      <button class="icon-btn" data-go="s-home" style="margin-left:auto" aria-label="Home">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/></svg>
+      </button>
+    </div>
+    <div class="det" id="detBody"></div>
+  </section>
+
+  <section class="screen" id="s-add">
+    <div class="head">
+      <button class="back" data-go="s-home" aria-label="Back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div><div class="label">Add to the collection</div>
+        <div class="quiet" style="margin-top:4px" id="addSub">Catch it now, write it up later</div></div>
+      <button class="icon-btn" data-go="s-home" style="margin-left:auto" aria-label="Home"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/></svg></button>
+    </div>
+    <div class="add-body">
+      <div class="add-field">
+        <label class="label" for="addTerm">The word or phrase</label>
+        <input class="add-in" id="addTerm" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="anfractuous">
+        <p class="add-warn" id="addWarn" hidden></p>
+      </div>
+      <div class="add-field">
+        <span class="label">What kind</span>
+        <div class="kinds" id="addKinds"></div>
+      </div>
+      <div class="add-field">
+        <label class="label" for="addNote">Where you met it <span class="opt-lbl">&mdash; optional</span></label>
+        <textarea class="add-in add-note" id="addNote" rows="2" placeholder="in the Melville, ch. 32"></textarea>
+      </div>
+      <button class="btn btn-go" id="addGo">Add to the queue</button>
+      <div id="addRecent"></div>
+    </div>
+  </section>
+
+</div></div>
+
+<script>
+/* === deck \u2014 real entries from DJ's list === */
+const E={
+ ersatz:{t:'Ersatz',p:'/\u02c8er\u02ccz\u00e4ts/',pos:'adj.',k:0,d:'an inferior substitute passed off as the real thing',
+  s:'The conference offered an ____ intimacy: name tags, assigned seats, eleven minutes per conversation.',
+  n:'German, and it still sounds it. Sharper than \u201cfake\u201d \u2014 it implies the substitution was official.'},
+ supercilious:{t:'Supercilious',p:'/\u02ccso\u035eop\u0259r\u02c8sil\u0113\u0259s/',pos:'adj.',k:0,d:'haughtily disdainful; behaving as one\u2019s superior',
+  s:'A ____ glance at the wine list told us everything about the evening ahead.',
+  n:'From the Latin for eyebrow. The raised brow is the entire word.'},
+ temerity:{t:'Temerity',p:'/t\u0259\u02c8mer\u0259d\u0113/',pos:'n.',k:0,d:'reckless boldness; nerve',
+  s:'He had the ____ to ask for a raise the week he lost the account.',
+  n:'Almost always \u201cthe ___ to\u201d. It is a frame, not just a word.'},
+ obsequious:{t:'Obsequious',p:'/\u0259b\u02c8s\u0113kw\u0113\u0259s/',pos:'adj.',k:0,d:'fawning; excessively eager to please or obey',
+  s:'He was ____ to the chairman, agreeing with positions the man had abandoned an hour earlier.',
+  n:'Carries contempt. Never neutral \u2014 you are accusing someone of servility.'}
+};
+const P={
+ thirdrail:{t:'Third rail',pos:'phr.',k:1,d:'a topic so charged that touching it destroys the one who does',
+  right:'Entitlement reform is the third rail of American politics - nobody touches it twice.',
+  wrong:'The new hire became the third rail of the team, handling every difficult client.',
+  n:'From the electrified rail on a subway track. The point is lethality, not importance.'},
+ bullypulpit:{t:'Bully pulpit',pos:'phr.',k:1,d:'a position high enough to command an audience for your argument',
+  right:'She used the chairmanship as a bully pulpit, and the industry changed its labelling within a year.',
+  wrong:'He ran the meeting like a bully pulpit, shouting down anyone who disagreed.',
+  n:'Roosevelt meant "bully" as in splendid. Nothing to do with bullying - the commonest misuse there is.'},
+ hoipolloi:{t:'Hoi polloi',pos:'phr.',k:1,d:'the common people; the masses',
+  right:'He took the members-only entrance to avoid queueing with the hoi polloi.',
+  wrong:'Box seats, a private car - the hoi polloi live very well indeed.',
+  n:'Greek for "the many". Regularly inverted to mean the elite, which is exactly backwards.'},
+ tablestakes:{t:'Table stakes',pos:'phr.',k:1,d:'the minimum required to participate at all, not an advantage',
+  right:'Encryption is table stakes now; nobody will thank you for shipping it.',
+  wrong:'Their encryption is real table stakes - it is the reason customers choose them.',
+  n:'From poker. If you are calling something table stakes you are saying it wins you nothing.'},
+ sinequanon:{t:'Sine qua non',pos:'phr.',k:1,d:'the one indispensable condition, without which the thing cannot exist',
+  right:'Trust is the sine qua non of the whole arrangement - lose it and there is nothing left to negotiate.',
+  wrong:'A decent espresso machine is the sine qua non of a well-appointed office.',
+  n:'Literally "without which not". Reserve it for things that are genuinely load-bearing.'}
+};
+const C={
+ deviance:{t:'Normalization of deviance',pos:'concept',k:2,d:'repeated small deviations become the accepted standard',
+  scene:'The O-rings eroded on every flight, and every flight came back - so erosion became the expected result rather than the warning.',
+  n:'Diane Vaughan, on Challenger. Your best phrase for slow institutional rot.'},
+ lossaversion:{t:'Loss aversion',pos:'concept',k:2,d:'losses loom roughly twice as large as equivalent gains',
+  scene:'You hold the losing position because selling would make the loss real - while the identical gain never tempted you to hold.',
+  n:'Kahneman and Tversky. Not risk aversion, which is about variance.'},
+ hedonic:{t:'Hedonic habituation',pos:'concept',k:2,d:'response to a pleasant stimulus fades as it stays constant',
+  scene:'The raise thrilled you for three weeks. By the second month it was simply your salary.',
+  n:'The engine behind the treadmill. Why novelty outperforms magnitude.'},
+ chekhov:{t:'Chekhov\u2019s gun',pos:'concept',k:2,d:'an element introduced must be used, or it should be cut',
+  scene:'The rifle hung above the mantel in the first act has no business being there unless it fires.',
+  n:'A rule about economy, routinely misquoted as a rule about foreshadowing.'},
+ omission:{t:'Omission bias',pos:'concept',k:2,d:'harm caused by doing nothing feels less culpable than the same harm caused by acting',
+  scene:'The team judged shipping a risky fix far more harshly than shipping nothing, though the outage was identical either way.',
+  n:'Why institutions default to inaction and call it prudence.'},
+ occam:{t:'Occam\u2019s razor',pos:'concept',k:2,d:'prefer the explanation requiring the fewest assumptions',
+  scene:'Before theorising about coordinated sabotage, note that the intern pushed to the wrong branch at 4pm.',
+  n:'A tie-breaker between theories that fit equally well - not proof the simple one is true.'}
+};
+const Q={
+ november:{t:'A damp, drizzly November',pos:'Moby-Dick, ch. 1',k:3,
+  d:'Ishmael, on why he goes to sea',
+  s:'Whenever I find myself growing grim about the mouth; whenever it is a damp, drizzly ____ in my soul - then, I account it high time to get to sea as soon as I can.',
+  answer:'November',
+  alt:['October','Sunday','silence'],
+  n:'The whole novel is in that line: going to sea as an alternative to despair.'},
+ vaintoy:{t:'Thou vain toy',pos:'Moby-Dick, ch. 118',k:3,
+  d:'Ahab, smashing the quadrant',
+  s:'Science! Curse thee, thou vain ____!',
+  answer:'toy',
+  alt:['hope','star','craft'],
+  n:'Ahab rejects instruments that tell him where he is but not where the whale is.'}
+};
+/* k: 0 word \u00b7 1 phrase \u00b7 2 concept \u00b7 3 quote \u2014 hue. r: 0\u20133 rank \u2014 fill. */
+const WALL=[
+ ['Anfractuous',0,3],['Obsequious',0,2],['Parsimony',0,3],['Alacrity',0,2],['Ersatz',0,3],
+ ['Recalcitrant',0,2],['Temerity',0,1],['Supercilious',0,2],['Feckless',0,3],['Sartorial',0,1],
+ ['Apotheosis',0,1],['Pernicious',0,2],['Capricious',0,2],['Intransigent',0,1],['Defenestration',0,3],
+ ['Puerile',0,2],['Mondegreen',0,0],['Aptronym',0,0],['Diapason',0,0],['Sublunary',0,0],
+ ['Daedalian',0,0],['Parisology',0,0],['Raisonneur',0,0],['Anathema',0,2],['Miasma',0,2],
+ ['Simulacrum',0,1],['Scurrilous',0,0],['Inveterate',0,0],['Equanimity',0,2],['Obviate',0,1],
+ ['Rapacious',0,2],['Specious',0,2],['Venerable',0,3],['Guile',0,2],['Myopia',0,3],['Ethos',0,3],
+ ['Neologism',0,1],['Celerity',0,0],['Impugn',0,1],['Heterodoxy',0,0],['Internecine',0,1],
+ ['Apparatchiks',0,1],['Ossified',0,2],['Galvanic',0,1],['Censoriousness',0,0],['Delphic',0,0],
+ ['Pleonasm',0,0],['Lyceum',0,0],['Dilettante',0,2],['Irascible',0,2],['Despondent',0,3],
+ ['Hoi polloi',1,3],['Bully pulpit',1,3],['Third rail',1,3],['Sine qua non',1,2],['Table stakes',1,3],
+ ['Watershed moment',1,2],['In-kind',1,1],['Dirty pool',1,1],['Per se',1,3],['Inverted yield curve',1,0],
+ ['Walled garden',1,2],['Death knell',1,2],['At loggerheads',1,2],['Whataboutism',1,3],
+ ['Loss aversion',2,3],['Hedonic habituation',2,1],['Chekhov\u2019s gun',2,3],['Normalization of deviance',2,1],
+ ['Omission bias',2,0],['Occam\u2019s razor',2,3],['Maslow\u2019s hierarchy',2,2],['Kaizen',2,1],['Kayfabe',2,2],
+ ['Eudaimonia',2,0],['Hedonia',2,0],['The Shepherd tone',2,0],
+ ['\u201c\u2026a damp, drizzly November in my soul\u201d',3,2],['\u201cScience! Curse thee, thou vain toy!\u201d',3,1]
+];
+/* WALL holds each entry's STARTING rank. What it is now lives here and
+   in localStorage, so answering actually moves a word and the wall
+   actually fills - otherwise "the mural fills as you learn" is a poster,
+   not a mechanic. */
+const LS='lexi.ranks.v2', SLS='lexi.streak.v1';
+/* A streak counts days you finished a run. It is stored as the actual
+   dates, never as a number - a stored counter cannot tell a missed day
+   from a clock change, and would happily keep a streak you had broken. */
+let ST=(()=>{ try{ return JSON.parse(localStorage.getItem(SLS))||{days:[],best:0} }catch(e){ return {days:[],best:0} } })();
+const dayKey=d=>{ const z=new Date(d); z.setMinutes(z.getMinutes()-z.getTimezoneOffset()); return z.toISOString().slice(0,10) };
+const today=()=>dayKey(new Date());
+const backFrom=(n)=>{ const d=new Date(); d.setDate(d.getDate()-n); return dayKey(d) };
+function streakLen(){
+  const done=new Set(ST.days);
+  let i = done.has(backFrom(0)) ? 0 : (done.has(backFrom(1)) ? 1 : -1);
+  if(i<0) return 0;
+  let n=0; while(done.has(backFrom(i))){ n++; i++ }
+  return n;
+}
+function markToday(){
+  const t=today();
+  if(ST.days.includes(t)) return false;
+  ST.days.push(t); ST.days=ST.days.slice(-400);
+  ST.best=Math.max(ST.best||0, streakLen());
+  try{ localStorage.setItem(SLS,JSON.stringify(ST)) }catch(e){}
+  return true;
+}
+let RANK=(()=>{ try{ return JSON.parse(localStorage.getItem(LS))||{} }catch(e){ return {} } })();
+const seedRank=t=>{ const w=WALL.find(x=>x[0]===t); return w?REMAP[w[2]]:0 };
+const rankOf=t=>RANK[t]!==undefined?RANK[t]:seedRank(t);
+let rev=0;
+function setRank(t,r){
+  if(rankOf(t)===r) return false;
+  RANK[t]=r; rev++;
+  try{ localStorage.setItem(LS,JSON.stringify(RANK)) }catch(e){}
+  return true;
+}
+/* -- the queue -------------------------------------------------
+   A word you met in the wild is worth ten you were handed, but only
+   if catching it costs nothing. So the queue takes a word and asks
+   for nothing else: the kind defaults, the note is optional, and the
+   only thing checked is that it is not already here. An entry sits on
+   the wall as New until someone writes its definition - which is why
+   the games never draw from it. */
+const BLS='lexi.best.v1', ULS='lexi.used.v1';
+/* Per deck, not one number across all four: a two-question Quotes run
+   and a five-question Vocabulary run are not the same ladder. */
+let BEST=(()=>{ try{ return JSON.parse(localStorage.getItem(BLS))||{} }catch(e){ return {} } })();
+function saveBest(){ try{ localStorage.setItem(BLS,JSON.stringify(BEST)) }catch(e){} }
+/* When you used a word, and where. The seeded Used entries predate this
+   and have no record - so they say nothing rather than inventing a day. */
+let USED=(()=>{ try{ const v=JSON.parse(localStorage.getItem(ULS)); return v&&typeof v==='object'?v:{} }catch(e){ return {} } })();
+function saveUsed(){ try{ localStorage.setItem(ULS,JSON.stringify(USED)) }catch(e){} }
+const usedRec=t=>(USED[t]&&typeof USED[t]==='object')?USED[t]:null;
+const fmtDay=ms=>new Date(ms).toLocaleDateString(undefined,{day:'numeric',month:'long'});
+const ILS='lexi.inbox.v1';
+let INBOX=(()=>{ try{ const v=JSON.parse(localStorage.getItem(ILS)); return Array.isArray(v)?v:[] }catch(e){ return [] } })();
+function saveInbox(){ try{ localStorage.setItem(ILS,JSON.stringify(INBOX)) }catch(e){} }
+const norm=t=>String(t).trim().toLowerCase().replace(/\s+/g,' ');
+const inboxOf=t=>INBOX.find(x=>norm(x.t)===norm(t));
+const known=t=>WALL.some(w=>norm(w[0])===norm(t))||!!inboxOf(t);
+/* Queued entries are on the wall from the moment they are dropped -
+   that is the whole reward for dropping one. */
+const wallNow=()=>WALL.map(([t,k,r])=>[t,k,rankOf(t)])
+  .concat(INBOX.map(x=>[x.t,x.k,rankOf(x.t)]));
+const KIND=[{n:'Words',v:'--ultra'},{n:'Phrases',v:'--cyan'},{n:'Concepts',v:'--amber'},{n:'Quotes',v:'--stone'}];
+const KIND1=['Word','Phrase','Concept','Quote'];   /* the deck names, singular, for picking one */
+/* Three ranks, not four. "Seen" and "Learning" were the same thing
+   wearing different names, and nobody could say what separated them. */
+const RANKS=['New','Known','Used'];
+const REMAP=[0,0,1,2];                 /* old four-rank seed data -> new three */
+
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+/* Every entry up to now was written into the source by hand. A queued
+   one is typed by whoever is holding the phone, so it is escaped on the
+   way to innerHTML - once, here, rather than remembered at each site. */
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const buzz=m=>{try{navigator.vibrate&&navigator.vibrate(m)}catch(e){}};
+const CALM=matchMedia('(prefers-reduced-motion: reduce)').matches;
+/* A hidden tab never fires requestAnimationFrame, so GSAP's ticker never
+   advances \u2014 and a fromTo() would strand its targets on the start state,
+   i.e. a blank page, until you looked at it. Entrances therefore only run
+   when someone is actually watching; otherwise everything is simply,
+   immediately, there. */
+const VIS=()=>document.visibilityState==='visible';
+const canMove=()=>!CALM && VIS();
+/* And if the tab goes hidden *during* an entrance, rAF stops mid-stagger
+   and the rest would stay invisible. setTimeout still fires when hidden,
+   so it settles anything the ticker abandoned. */
+function settle(sel,ms){
+  /* Unconditional on purpose. An entrance animation must never be the
+     only thing standing between the reader and the content: if the
+     ticker stalls for ANY reason - hidden tab, lost context, a throw
+     elsewhere - this puts everything back to its natural, visible
+     state. Harmless when the animation did finish. */
+  setTimeout(()=>{ try{ gsap.set(sel,{clearProps:'opacity,filter,transform,y'}) }catch(e){} }, ms);
+}
+/* One place decides how fast anything moves. Calm means slow, and it
+   means sine/power easing \u2014 never a bounce, never an overshoot. */
+gsap.defaults({ease:'power2.out', duration:CALM?0.01:0.75});
+function rng(seed){let s=seed>>>0;return()=>((s=(s*1664525+1013904223)>>>0)/4294967296)}
+
+/* -- mural ---------------------------------------------------- */
+/* An island: elongated, smooth-edged, fine-threaded. The real panels
+   are mostly empty glass - lobes float with generous gaps and read as
+   distinct shapes, never as an all-over texture. */
+function islandPath(ctx,x,y,rx,ry,rand){
+  const n=9, pts=[];
+  for(let i=0;i<n;i++){
+    const a=i/n*Math.PI*2, k=.80+rand()*.38;
+    pts.push([x+Math.cos(a)*rx*k, y+Math.sin(a)*ry*k]);
+  }
+  ctx.beginPath();
+  ctx.moveTo((pts[0][0]+pts[n-1][0])/2,(pts[0][1]+pts[n-1][1])/2);
+  for(let i=0;i<n;i++){ const c=pts[i], nx=pts[(i+1)%n];
+    ctx.quadraticCurveTo(c[0],c[1],(c[0]+nx[0])/2,(c[1]+nx[1])/2) }
+  ctx.closePath();
+}
+function lobe(ctx,cx,cy,rx,ry,color,weight,seed){
+  const rand=rng(seed);
+  const N=13;                                   /* fine weave, not chunky */
+  const amp=Math.min(rx,ry)*(.10+rand()*.10), a1=rand()*6.283, f=1.4+rand()*1.2;
+  const P=[];
+  for(let i=0;i<=N;i++){
+    const row=[];
+    for(let j=0;j<=N;j++){
+      const u=(i/N-.5)*2.15, v=(j/N-.5)*2.15;
+      row.push([
+        cx+u*rx+Math.sin(v*f+a1)*amp+Math.sin(u*2.3+a1*1.7)*amp*.45,
+        cy+v*ry+Math.cos(u*f*.9+a1)*amp+Math.cos(v*2.1+a1*.6)*amp*.45
+      ]);
+    }
+    P.push(row);
+  }
+  ctx.save();
+  islandPath(ctx,cx,cy,rx*.92,ry*.92,rng(seed+7)); ctx.clip();
+  ctx.strokeStyle=color; ctx.lineWidth=weight; ctx.lineJoin='round'; ctx.lineCap='round';
+  for(let i=0;i<=N;i++){ ctx.beginPath();
+    P[i].forEach((q,j)=> j?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1])); ctx.stroke() }
+  for(let j=0;j<=N;j++){ ctx.beginPath();
+    P.forEach((row,i)=> i?ctx.lineTo(row[j][0],row[j][1]):ctx.moveTo(row[j][0],row[j][1])); ctx.stroke() }
+  ctx.restore();
+}
+
+/* -- the wall, in three dimensions ----------------------------------
+   The panels in Style/ are not flat prints: each lobe reads as a net
+   draped over a form, seen in perspective. So it is built as one - a
+   parametric surface strung with meridians and rings, then drifted
+   through real space. WebGL draws lines a single pixel wide no matter
+   what, which is exactly the thread weight this wants.                */
+let W3=null;
+/* The form is no longer baked into the vertices. Each net ships its own
+   (u,v) parameters and the shape is solved in the vertex shader every
+   frame, so the standing waves travel and the whole body swells and
+   draws back - cloth in slow air, which is what a hanging woven panel
+   does. Deforming 64 geometries on the CPU would cost ~45,000 trig
+   calls a frame; on the GPU it costs nothing. */
+const WALL_VS=`
+attribute vec2 uvp;
+uniform float uTime,uAmp,uF,uA1,uG1,uPhase;
+uniform vec3 uE;
+varying float vSheen;
+void main(){
+  float u=uvp.x, v=uvp.y, t=uTime;
+  float r = 1.0
+    + sin(v*uF + uA1 + t*0.22)*uAmp
+    + cos(u*2.0 + uG1 - t*0.17)*uAmp*0.55
+    + sin(u*3.0 + v*2.0 + uA1 + t*0.29)*uAmp*0.25;
+  /* the breath: every net on its own phase, so the field never
+     pulses as one block */
+  r *= 1.0 + sin(t*0.26 + uPhase)*0.135 + sin(t*0.11 + uPhase*1.7)*0.055;
+  vec3 p = vec3(r*sin(v)*cos(u)*uE.x, r*cos(v)*uE.y, r*sin(v)*sin(u)*uE.z);
+  vec4 wp = modelMatrix * vec4(p,1.0);
+  /* light crossing behind the glass, not a lamp on the object */
+  vSheen = sin(wp.x*0.085 + wp.y*0.05 - t*0.42);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(p,1.0);
+}`;
+const WALL_FS=`
+precision mediump float;
+uniform vec3 uColor; uniform float uOpacity;
+varying float vSheen;
+void main(){
+  gl_FragColor = vec4(uColor, uOpacity*(0.78 + 0.30*vSheen));
+}`;
+function netMat(color,opacity,par){
+  return new THREE.ShaderMaterial({
+    uniforms:{ uTime:{value:0}, uAmp:{value:par.amp}, uF:{value:par.f},
+      uA1:{value:par.a1}, uG1:{value:par.g1}, uPhase:{value:par.ph},
+      uE:{value:new THREE.Vector3(par.ex,par.ey,par.ez)},
+      uColor:{value:new THREE.Color(color)}, uOpacity:{value:opacity} },
+    vertexShader:WALL_VS, fragmentShader:WALL_FS,
+    transparent:true, depthWrite:false
+  });
+}
+function net3(seed){
+  const rand=rng(seed), NU=17, NV=11;
+  const par={amp:.20+rand()*.22, a1:rand()*6.283, f:1.1+rand()*1.5, g1:rand()*6.283,
+             ex:1.35+rand()*.55, ey:.62+rand()*.22, ez:.80+rand()*.3, ph:rand()*6.283};
+  const UV=(i,j)=>[i/NU*Math.PI*2, j/NV*Math.PI];
+  /* position is still filled with the shape at rest - the shader
+     ignores it, but three.js wants the attribute to exist */
+  const P=(i,j)=>{
+    const [u,v]=UV(i,j);
+    const r=1+Math.sin(v*par.f+par.a1)*par.amp+Math.cos(u*2+par.g1)*par.amp*.55
+             +Math.sin(u*3+v*2+par.a1)*par.amp*.25;
+    return [ r*Math.sin(v)*Math.cos(u)*par.ex, r*Math.cos(v)*par.ey, r*Math.sin(v)*Math.sin(u)*par.ez ];
+  };
+  const pos=[], uvp=[];
+  const put=(i,j)=>{ pos.push(...P(i,j)); uvp.push(...UV(i,j)) };
+  for(let j=1;j<NV;j++) for(let i=0;i<NU;i++){ put(i,j); put(i+1,j) }   /* rings */
+  for(let i=0;i<NU;i++) for(let j=0;j<NV;j++){ put(i,j); put(i,j+1) }   /* meridians */
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  g.setAttribute('uvp',new THREE.Float32BufferAttribute(uvp,2));
+  return {g,par};
+}
+function initWall3D(){
+  const cv=document.getElementById('wall3d');
+  if(!cv||!window.THREE) return false;
+  let rend;
+  try{ rend=new THREE.WebGLRenderer({canvas:cv,alpha:true,antialias:true}) }catch(e){ return false }
+  if(!rend) return false;
+  rend.setPixelRatio(Math.min(2,devicePixelRatio||1));
+  const scene=new THREE.Scene(), cam=new THREE.PerspectiveCamera(45,1,.1,120);
+  cam.position.z=14;
+  W3={rend,scene,cam,items:[],t0:0};
+  return true;
+}
+function buildWall3D(animate){
+  if(!W3) return;
+  const {scene,cam,rend}=W3;
+  W3.items.forEach(o=>{ scene.remove(o.mesh); o.mesh.geometry.dispose(); o.mesh.material.dispose() });
+  W3.items=[];
+  const w=innerWidth, h=innerHeight;
+  rend.setSize(w,h,false); cam.aspect=w/h; cam.updateProjectionMatrix();
+  const vh=2*Math.tan(cam.fov*Math.PI/360)*cam.position.z, vw=vh*cam.aspect;
+  /* Deliberately NOT driven by your progress. A score tracker that is
+     also the wallpaper makes a worse chart and a worse wall: most of it
+     would sit washed-out grey until you had earned it, and the room you
+     study in should not look like a progress bar. This is a fixed
+     composition, weighted the way the real panels are - mostly blues,
+     cyan next, amber and stone as accents. */
+  const PAL=[css('--ultra'),css('--ultra'),css('--ultra'),css('--ultra'),css('--ultra'),css('--ultra'),
+             css('--cyan'),css('--cyan'),css('--amber'),css('--stone'),css('--cream')]
+            .map(c=>new THREE.Color(c));
+  const rand=rng(20260912), N=64;
+  const cols=Math.max(3,Math.round(Math.sqrt(N*(vw/vh)))), rows=Math.ceil(N/cols);
+  for(let i=0;i<N;i++){
+    const depth=-8+rand()*6.5;
+    /* nearer reads slightly stronger, which is just how air works */
+    const op=.22+((depth+8)/14.5)*.34;
+    const net=net3(20260912+i*37);
+    const mat=netMat(PAL[Math.floor(rand()*PAL.length)],op,net.par);
+    const mesh=new THREE.LineSegments(net.g,mat);
+    mesh.frustumCulled=false;        /* the vertices move; the bounds lie */
+    const cw=vw/cols, ch=vh/rows;
+    mesh.position.set(
+      -vw/2+(i%cols+.5)*cw+(rand()-.5)*cw*.55,
+       vh/2-(Math.floor(i/cols)+.5)*ch+(rand()-.5)*ch*.55,
+      depth                                            /* real depth, real parallax */
+    );
+    const sc=Math.min(cw,ch)*(.20+Math.pow(rand(),2.0)*.30);
+    mesh.rotation.set(rand()*3,rand()*6,rand()*.6);
+    scene.add(mesh);
+    W3.items.push({mesh,sc,op,
+      /* Time-based, not per-frame: a slow tumble of 40-90 seconds a turn,
+         which reads as drifting rather than as a still image. */
+      rx0:mesh.rotation.x, ry0:mesh.rotation.y,
+      spinY:(rand()<.5?-1:1)*(.07+rand()*.10), spinX:(rand()-.5)*.05,
+      ph:rand()*6.283, bob:.34+rand()*.55, bs:.10+rand()*.13,
+      d:Math.hypot(mesh.position.x,mesh.position.y),
+      x0:mesh.position.x, y0:mesh.position.y});
+  }
+  W3.items.sort((a,b)=>a.d-b.d);
+  if(!animate||!canMove()){
+    W3.items.forEach(o=>o.mesh.scale.setScalar(o.sc));
+    renderWall3D();
+    return;
+  }
+  W3.items.forEach(o=>{ o.mesh.scale.setScalar(0); o.mesh.material.uniforms.uOpacity.value=0 });
+  gsap.to(W3.items.map(o=>o.mesh.scale),{x:1,y:1,z:1,duration:0,overwrite:true});
+  W3.items.forEach((o,i)=>{
+    gsap.fromTo(o.mesh.scale,{x:0,y:0,z:0},
+      {x:o.sc,y:o.sc,z:o.sc,duration:1.9,ease:'power3.out',delay:i*.018});
+    gsap.fromTo(o.mesh.material.uniforms.uOpacity,{value:0},
+      {value:o.op,duration:1.6,ease:'power2.out',delay:i*.018});
+  });
+  renderWall3D();
+}
+function renderWall3D(){
+  if(!W3) return;
+  const t=gsap.ticker.time;
+  if(canMove()){
+    W3.items.forEach(o=>{
+      /* the one line that makes them breathe */
+      o.mesh.material.uniforms.uTime.value=t;
+      /* the spin wanders instead of ticking - nothing turns at a fixed
+         rate forever, and the eye reads a constant rate as machinery */
+      o.mesh.rotation.y=o.ry0+t*o.spinY+Math.sin(t*.07+o.ph)*.22;
+      o.mesh.rotation.x=o.rx0+t*o.spinX+Math.cos(t*.05+o.ph)*.14;
+      /* each drifts on its own phase, so the field never moves as a block */
+      o.mesh.position.y=o.y0+Math.sin(t*o.bs+o.ph)*o.bob;
+      o.mesh.position.x=o.x0+Math.cos(t*o.bs*.72+o.ph)*o.bob*.55;
+    });
+    /* the camera wanders and dollies, which is what sells the depth */
+    W3.cam.position.x=Math.sin(t*.075)*1.9;
+    W3.cam.position.y=Math.cos(t*.058)*1.15;
+    W3.cam.position.z=14+Math.sin(t*.043)*1.3;
+    W3.cam.lookAt(0,0,0);
+  }
+  W3.rend.render(W3.scene,W3.cam);
+}
+function paintWall(animate){
+  if(W3===null && initWall3D()===false){ W3=undefined }   /* undefined = gave up */
+  if(W3){ document.getElementById('wall').style.opacity=0; buildWall3D(animate); return }
+  const cv=document.getElementById('wall');              /* 2D fallback */
+  if(cv){
+    const r2=rng(20260912);
+    const DECOR=Array.from({length:52},()=>['',[0,0,0,1,1,2,3][Math.floor(r2()*7)],Math.floor(r2()*3)]);
+    showMural(cv, DECOR, 20260912, 1, animate);
+  }
+}
+
+/* -- the mural --------------------------------------------------
+   Each entry is rendered ONCE into its own sprite. After that a frame
+   costs 78 drawImage calls instead of ~1,600 strokes \u2014 which is what
+   pays for every lobe having its own opacity, scale and drift. That's
+   the difference between arriving and appearing. */
+const murals=new Map();
+/* 165 islands inside a 186px card is a tangle no matter how they are
+   drawn. Home shows a readable slice; the collection screen is where
+   the whole wall lives, on a canvas tall enough to hold it. */
+
+function buildMural(cv,items,seed,scale){
+  const theme=document.documentElement.getAttribute('data-theme')||'sys';
+  const key=cv.id+'|'+cv.clientWidth+'x'+cv.clientHeight+'|'+theme;
+  if(murals.has(key)) return murals.get(key);
+  const dpr=Math.min(2,devicePixelRatio||1), w=cv.clientWidth, h=cv.clientHeight;
+  const rand=rng(seed);
+  const cols=Math.ceil(Math.sqrt(items.length*(w/h))), rows=Math.ceil(items.length/cols);
+  const cw=w/cols, ch=h/rows, hues=KIND.map(k=>css(k.v));
+  const sprites=items.map((it,i)=>{
+    /* Radii stay well under half a cell, so gaps are the default and
+       touching is the exception - which is what makes each island read. */
+    const rx=Math.min(cw,ch)*(.30+Math.pow(rand(),1.8)*.40)*scale;
+    const ry=rx*(.54+rand()*.28);
+    const x=(i%cols+.5)*cw+(rand()-.5)*cw*.40, y=(Math.floor(i/cols)+.5)*ch+(rand()-.5)*ch*.40;
+    const sd=seed+i*37;
+    const pad=Math.ceil(Math.max(rx,ry)*1.35), size=pad*2, rank=it[2];
+    const off=document.createElement('canvas');
+    off.width=size*dpr; off.height=size*dpr;
+    const o=off.getContext('2d'); o.setTransform(dpr,0,0,dpr,0,0); o.translate(pad,pad);
+    o.globalAlpha=[.34,.62,1][rank];
+    lobe(o,0,0,rx,ry, rank===0?css('--stone'):hues[it[1]], .9, sd);
+    return {img:off,x,y,size,a:0,sc:.86,
+            ph:rand()*Math.PI*2, amp:2.0+rand()*3.0, sp:.05+rand()*.06,
+            d:Math.hypot(x-w/2,y-h/2)};
+  }).sort((a,b)=>a.d-b.d);          /* centre outward */
+  const m={w,h,dpr,sprites}; murals.set(key,m); return m;
+}
+let live=[], ticking=false;
+function renderMurals(){
+  renderWall3D();
+  const t=gsap.ticker.time;
+  live.forEach(({cv,m})=>{
+    const ctx=cv.getContext('2d');
+    ctx.setTransform(m.dpr,0,0,m.dpr,0,0);
+    ctx.globalCompositeOperation='source-over';
+    ctx.fillStyle=css('--surface'); ctx.fillRect(0,0,m.w,m.h);
+    ctx.globalCompositeOperation='multiply';
+    m.sprites.forEach(s=>{
+      if(s.a<=.003) return;
+      /* every lobe breathes on its own phase \u2014 the mural is never
+         quite still, which is what stops it reading as a printed image */
+      const dx=CALM?0:Math.sin(t*s.sp+s.ph)*s.amp;
+      const dy=CALM?0:Math.cos(t*s.sp*.83+s.ph)*s.amp*.8;
+      const sz=s.size*s.sc;
+      ctx.globalAlpha=s.a;
+      ctx.drawImage(s.img, s.x-sz/2+dx, s.y-sz/2+dy, sz, sz);
+    });
+    ctx.globalAlpha=1; ctx.globalCompositeOperation='source-over';
+  });
+}
+function showMural(cv,items,seed,scale,animate){
+  if(!cv||!cv.clientWidth) return;
+  const dpr=Math.min(2,devicePixelRatio||1);
+  cv.width=cv.clientWidth*dpr; cv.height=cv.clientHeight*dpr;
+  const m=buildMural(cv,items,seed,scale);
+  live=live.filter(x=>x.cv!==cv); live.push({cv,m});
+  if(!ticking){ gsap.ticker.add(renderMurals); ticking=true }
+  gsap.killTweensOf(m.sprites);
+  if(!animate||!canMove()){
+    m.sprites.forEach(s=>{s.a=1;s.sc=1});
+    renderMurals();                 /* one synchronous paint, no ticker needed */
+    return;
+  }
+  m.sprites.forEach(s=>{s.a=0;s.sc=.86});
+  gsap.to(m.sprites,{a:1,sc:1,duration:1.7,ease:'power2.out',stagger:{each:.022,from:'center'}});
+  renderMurals();
+}
+
+/* -- run state ------------------------------------------------ */
+const DECK=[Object.values(E),Object.values(P),Object.values(C),Object.values(Q)];
+const GAMES=[
+ {n:'Vocabulary'},
+ {n:'Phrases'},
+ {n:'Concepts'},
+ {n:'Quotes'}
+];
+const LABEL={fill:'Context fill',bank:'Recall',typed:'Recall',usage:'Usage',concept:'Name the pattern',quote:'Finish the line'};
+/* Each game is its own run. Mixing a Challenger scenario with a rare
+   adjective and a line of Melville tested nothing coherent - they are
+   different skills, so they get different decks and different verbs. */
+const PLAN=[['fill','fill','bank','fill','typed'],
+            ['usage','usage','usage','usage'],
+            ['concept','concept','concept','concept'],
+            ['quote','quote']];
+function choices(e,kind){
+  const pool=WALL.filter(w=>w[1]===kind&&w[0]!==e.t).map(w=>w[0]);
+  return shuffle([e.t].concat(shuffle(pool).slice(0,3)));
+}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function buildRun(kind){
+  /* A word you have used in the wild is retired - the entry screen says
+     "out of rotation", so it had better be. Fall back to the whole deck
+     only if retiring would leave too little to play. */
+  const all=DECK[kind], due=all.filter(e=>rankOf(e.t)<2);
+  const pool=shuffle(due.length>=2?due:all);
+  return PLAN[kind].map((type,i)=>{
+    const e=pool[i%pool.length];
+    const tier=type==='bank'?'Letters':type==='typed'?'Typed':'Choice';
+    const mult=type==='bank'?1.5:type==='typed'?2:1;
+    const q={kind:LABEL[type],tier,mult,type,e};
+    if(type==='fill'||type==='concept') q.opts=choices(e,kind);
+    if(type==='quote') q.opts=shuffle([e.answer].concat(e.alt));
+    return q;
+  });
+}
+let QS=[], runKind=0;
+let qi=0,score=0,combo=0,best=0,correct=0,misses=[],moved=[],locked=false;
+/* Leaving mid-turn has to cancel whatever was queued to advance it,
+   or the abandoned run walks on behind the home screen. */
+let pendTl=null, pendTo=null;
+function clearPending(){ if(pendTl){pendTl.kill();pendTl=null} if(pendTo){clearTimeout(pendTo);pendTo=null} }
+function runHead(){
+  $('#runHead').innerHTML=`<button class="exit" id="exitBtn" aria-label="Quit run">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button><span class="label">${GAMES[runKind].n}</span>`;
+  $('#exitBtn').onclick=askQuit;
+}
+function askQuit(){
+  $('#runHead').innerHTML=`<span class="confirm">
+      <span class="q">Quit this run? Progress is kept.</span>
+      <button class="mini" id="stayBtn">Keep going</button>
+      <button class="mini leave" id="quitBtn">Quit</button>
+    </span>`;
+  $('#stayBtn').onclick=runHead;
+  $('#quitBtn').onclick=quitRun;
+}
+function quitRun(){
+  clearPending(); locked=true;
+  go('s-home'); paintHome(true);
+}
+const mult=()=>Math.min(3,1+combo*.1);
+function go(id){
+  $$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
+  /* The background wall lives in #weave, outside every .screen, so
+     closest() gives null for it - and null is not "on a dead screen",
+     it is "belongs to no screen and must never be culled". */
+  live=live.filter(x=>{ const sc=x.cv.closest('.screen'); return !sc||sc.classList.contains('active') });
+  scrollTo(0,0);
+}
+function roll(el,to,dur=.9){
+  if(!canMove()){ el.textContent=to.toLocaleString(); return }
+  const o={v:+String(el.textContent).replace(/[^\d]/g,'')||0};
+  gsap.to(o,{v:to,duration:CALM?0.01:dur,ease:'power2.out',
+    onUpdate:()=>el.textContent=Math.round(o.v).toLocaleString()});
+  /* a counter must never be left mid-count if the ticker stops */
+  setTimeout(()=>{ if(!VIS()) el.textContent=to.toLocaleString() }, dur*1000+400);
+}
+function lev(a,b){
+  const m=[...Array(b.length+1)].map((_,i)=>[i,...Array(a.length).fill(0)]);
+  for(let j=1;j<=a.length;j++)m[0][j]=j;
+  for(let i=1;i<=b.length;i++)for(let j=1;j<=a.length;j++)
+    m[i][j]=Math.min(m[i-1][j]+1,m[i][j-1]+1,m[i-1][j-1]+(a[j-1]===b[i-1]?0:1));
+  return m[b.length][a.length];
+}
+function chrome(){
+  /* the thread gains ply and warms toward ochre \u2014 no flash, no glow */
+  gsap.to($('#rule'),{height:1+Math.min(3,combo*.5),duration:.9,ease:'power2.out',
+    backgroundColor: combo>=2?css('--amber'):(combo===1?css('--ultra'):css('--line'))});
+  const c=$('#comboEl'); c.textContent='\u00d7'+mult().toFixed(1);
+  gsap.fromTo(c,{opacity:.35},{opacity:1,duration:.7,color:combo>=2?css('--amber'):css('--text-dim')});
+  $$('#pips .pip').forEach((p,i)=>{
+    const c2=i<qi?(misses.some(x=>x.i===i)?css('--bad'):css('--ultra')):(i===qi?css('--text-dim'):css('--sunk'));
+    gsap.to(p,{backgroundColor:c2,duration:.6});
+  });
+}
+function renderQ(){
+  locked=false; const q=QS[qi], hue=css(KIND[q.e.k].v);
+  $('#kindEl').textContent=q.kind; $('#tierEl').textContent=q.tier;
+  $('#kindDot').style.background=hue; $('#tierEl').style.color=hue;
+  chrome();
+  const card=$('#qCard'), opts=$('#qOpts');
+  const shell=i=>`<div class="card">${i}</div>`;
+
+  if(q.type==='fill'||q.type==='quote'){
+    const [a,b]=q.e.s.split('____');
+    card.innerHTML=shell(`<div class="label">${q.type==='quote'?q.e.pos:'Complete the sentence'}</div>
+      <p class="sent${q.type==='quote'?' scene':''}" style="margin-top:14px">${a}<span class="blank" id="blank">${(q.answer||q.e.answer||q.e.t).toLowerCase()}</span>${b}</p>`);
+    opts.innerHTML=q.opts.map((o,i)=>`<button class="opt"><span class="k">${i+1}</span><span class="opt-term">${o}</span></button>`).join('');
+    wire(o=>o===(q.e.answer||q.e.t),q);
+  } else if(q.type==='concept'){
+    card.innerHTML=shell(`<div class="label">The scene</div>
+      <p class="sent scene" style="margin-top:14px">${q.e.scene}</p>`);
+    opts.innerHTML=q.opts.map((o,i)=>`<button class="opt"><span class="k">${i+1}</span><span>${o}</span></button>`).join('');
+    wire(o=>o===q.e.t,q);
+  } else if(q.type==='usage'){
+    const pair=Math.random()<.5?[q.e.right,q.e.wrong]:[q.e.wrong,q.e.right];
+    card.innerHTML=shell(`<div class="headword">${q.e.t}</div>
+      <div class="meta"><span class="pos">${q.e.pos}</span></div><p class="defn">${q.e.d}</p>
+      <p class="label" style="margin-top:18px">Which one uses it correctly?</p>`);
+    opts.innerHTML=pair.map((o,i)=>`<button class="opt"><span class="k">${i+1}</span><span style="font-size:14px">${o}</span></button>`).join('');
+    wire(o=>o===q.e.right,q);
+  } else if(q.type==='bank'){
+    const w=q.e.t.toLowerCase(), letters=w.split('').sort(()=>Math.random()-.5);
+    card.innerHTML=shell(`<div class="label">${q.e.pos} &middot; build the word</div>
+      <p class="defn">${q.e.d}</p>
+      <div class="slots" id="slots" style="margin-top:22px">${w.split('').map(()=>'<span class="slot"></span>').join('')}</div>`);
+    opts.innerHTML=`<div class="tiles" id="tiles">${letters.map(L=>`<button class="tile" data-l="${L}">${L}</button>`).join('')}</div>`;
+    let built=[]; const slots=()=>$$('#slots .slot');
+    $('#tiles').onclick=ev=>{
+      const t=ev.target.closest('.tile'); if(!t||locked||built.length>=w.length)return;
+      const s=slots()[built.length];
+      fly(t,s,t.dataset.l);                      /* the letter travels */
+      t.classList.add('used'); built.push(t.dataset.l); buzz(5);
+      if(built.length===w.length){
+        const ok=built.join('')===w;
+        gsap.delayedCall(CALM?0:.42,()=>{
+          slots().forEach((sl,i)=>{sl.classList.add(ok?'right':'wrong'); if(!ok)sl.textContent=w[i]});
+          judge(ok,q);
+        });
+      }
+    };
+  } else {
+    card.innerHTML=shell(`<div class="label">${q.e.pos} &middot; type the word</div>
+      <p class="defn">${q.e.d}</p>
+      <p class="sent" style="margin-top:14px;font-size:15px;color:var(--text-soft)">${q.e.s.replace('____','<span style="border-bottom:1.5px solid var(--ultra);padding:0 26px"></span>')}</p>`);
+    opts.innerHTML=`<input class="type-in" id="typeIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="&hellip;">
+      <button class="btn btn-go btn-sm" id="typeGo" style="margin-top:9px">Check</button>`;
+    const inp=$('#typeIn'); gsap.delayedCall(.5,()=>inp.focus());
+    const submit=()=>{
+      if(locked)return;
+      const g=inp.value.trim().toLowerCase(), w=q.e.t.toLowerCase(), d=lev(g,w);
+      inp.disabled=true;
+      if(d===0) judge(true,q);
+      else if(d<=2&&g.length>3) judge(true,q,`Close enough \u2014 it's <b>${w}</b>`);
+      else {inp.value=w; inp.style.borderColor=css('--bad'); judge(false,q)}
+    };
+    $('#typeGo').onclick=submit; inp.onkeydown=e=>{if(e.key==='Enter')submit()};
+  }
+
+  /* Nothing pops: everything resolves out of blur while it rises, so a
+     turn comes into focus rather than switching on. */
+  if(canMove()) gsap.timeline()
+    .fromTo(card.querySelector('.card'),
+      {y:24,opacity:0,filter:'blur(12px)'},
+      {y:0,opacity:1,filter:'blur(0px)',duration:1.05})
+    .fromTo($$('#qOpts .opt, #qOpts .tile, #qOpts .type-in, #qOpts .btn'),
+      {y:16,opacity:0,filter:'blur(7px)'},
+      {y:0,opacity:1,filter:'blur(0px)',duration:.8,stagger:.06},'-=.75');
+  settle('#qCard .card, #qOpts .opt, #qOpts .tile, #qOpts .type-in, #qOpts .btn',2600);
+}
+/* a letter physically crossing from the bank to its slot */
+function fly(from,to,ch){
+  if(CALM){to.textContent=ch;to.classList.add('has');return}
+  const a=from.getBoundingClientRect(), b=to.getBoundingClientRect();
+  const f=document.createElement('div');
+  f.className='flyer'; f.textContent=ch;
+  Object.assign(f.style,{left:a.left+'px',top:a.top+'px',width:a.width+'px',height:a.height+'px'});
+  document.body.appendChild(f);
+  gsap.to(f,{left:b.left,top:b.top,width:b.width,height:b.height,duration:.4,ease:'power2.inOut',
+    onComplete(){f.remove(); to.textContent=ch; to.classList.add('has');
+      gsap.fromTo(to,{scale:.82},{scale:1,duration:.5,ease:'power2.out'})}});
+}
+function wire(isRight,q){
+  $('#qOpts').onclick=ev=>{
+    const b=ev.target.closest('.opt'); if(!b||locked)return;
+    const chosen=b.querySelector('span:last-child').textContent, ok=isRight(chosen);
+    /* Once answered, only two options still say anything: the one you
+       picked and the one that was right. Clearing the rest makes room
+       for the entry and the Next button without pushing them off screen. */
+    const spent=[];
+    $$('.opt').forEach(o=>{
+      o.disabled=true; const t=o.querySelector('span:last-child').textContent;
+      if(isRight(t))o.classList.add('right');
+      else if(o===b)o.classList.add('wrong');
+      else spent.push(o);
+    });
+    const drop=()=>spent.forEach(o=>o.style.display='none');
+    if(canMove()) gsap.to(spent,{opacity:0,height:0,paddingTop:0,paddingBottom:0,
+      borderWidth:0,duration:.45,ease:'power2.inOut',onComplete:drop});
+    else drop();
+    setTimeout(drop,700);   /* never leave the collapse to a tween that may not run */
+    const bl=$('#blank');
+    if(bl){ bl.classList.add('shown'); if(!ok)bl.classList.add('bad');
+      if(canMove()) gsap.fromTo(bl,{opacity:0,y:-7},{opacity:1,y:0,duration:.65,ease:'power2.out'}) }
+    judge(ok,q);
+  };
+}
+function judge(ok,q,extra){
+  locked=true; let pts=0;
+  /* Ranks only ever go up. A word you missed today comes back sooner -
+     that is the whole consequence. Knocking it down a rank would make the
+     wall flicker backwards and punish you for meeting a hard word. */
+  const term=q.e.t, was=rankOf(term);
+  if(ok && was<1 && setRank(term,was+1)) moved.push({t:term,from:was,to:was+1});
+  if(ok){correct++;combo++;best=Math.max(best,combo);pts=Math.round(100*q.mult*mult());score+=pts;buzz([6,26,10])}
+  else{combo=0;misses.push({i:qi,e:q.e});buzz(45)}
+  roll($('#scoreEl'),score,.8); chrome();
+  const v=document.createElement('div');
+  v.className='verdict '+(ok?'good':'bad');
+  v.innerHTML=(ok?`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>`
+    :`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>`)
+    +`<span>${extra||q.e.n||''}</span>`+(ok?`<span class="pts">+${pts}</span>`:`<span class="pts">combo lost</span>`);
+  const cardEl=$('#qCard').querySelector('.card');
+  /* Show the entry itself. On a fill or a concept the definition was
+     never on screen - there was nothing to read even before it vanished. */
+  const e=q.e, rv=document.createElement('div');
+  rv.className='reveal';
+  rv.innerHTML=`<div class="rw">${e.answer||e.t}`
+    +(e.p?`<span class="rp">${e.p}</span>`:'')
+    +(e.pos?`<span class="rpos">${e.pos}</span>`:'')
+    +`</div>`+(e.d?`<div class="rd">${e.d}</div>`:'');
+  cardEl.appendChild(rv);
+  cardEl.appendChild(v);
+  gsap.fromTo(v,{y:10,opacity:0},{y:0,opacity:1,duration:.6,delay:.12});
+  const advance=()=>{ gsap.set(['#qOpts'],{clearProps:'all'}); qi++; qi>=QS.length?finish():renderQ() };
+  const leave=()=>{
+    clearPending();
+    if(canMove()) pendTl=gsap.timeline()
+      .to([cardEl,'#qOpts'],{y:-14,opacity:0,duration:.5,ease:'power2.in'})
+      .add(advance);
+    else advance();
+  };
+  clearPending();
+  const nx=document.createElement('button');
+  nx.className='btn btn-go btn-sm'; nx.id='nextBtn';
+  nx.textContent = qi+1>=QS.length ? 'See results' : 'Next';
+  $('#qOpts').appendChild(nx);
+  nx.onclick=leave;
+  if(canMove()) gsap.fromTo(nx,{opacity:0,y:8},{opacity:1,y:0,duration:.5,delay:.25});
+  /* anything that fades in must also be rescued if the ticker stops */
+  settle('#qCard .verdict, #qCard .reveal, #nextBtn',2200);
+  /* It always waits. The entry, its note and its definition are the
+     whole reason the turn happened, and a clock deciding you have
+     finished reading is exactly the wrong call - on a right answer as
+     much as a wrong one. Next moves; nothing else does. */
+}
+function finish(){
+  clearPending();
+  const first=markToday(), days=streakLen();
+  $('#sumN').textContent='0';
+  $('#sumAcc').textContent=correct+'/'+QS.length;
+  $('#sumC').textContent='\u00d7'+Math.min(3,1+best*.1).toFixed(1);
+  /* Nothing to beat on your first run of a deck, and saying "1,840
+     short of your best" when you have no best is worse than saying
+     nothing. The hint about the typed tier only belongs on the one
+     deck that has a typed question. */
+  const prev=BEST[runKind];
+  if(prev===undefined||score>prev){ BEST[runKind]=score; saveBest() }
+  $('#sumV').innerHTML = prev===undefined
+    ? `Your first run in ${GAMES[runKind].n}. That is the mark to beat.`
+    : score>prev
+      ? `<b>New best in ${GAMES[runKind].n}.</b> Previous was ${prev.toLocaleString()}.`
+      : `${(prev-score).toLocaleString()} short of your best.${runKind===0?' The typed tier pays double \u2014 that is where runs are won.':''}`;
+  $('#sumStreak').innerHTML = first
+    ? `<div class="note"><b>Day ${days} banked.</b> ${correct===QS.length
+        ? 'A clean run, too.'
+        : 'Streaks measure turning up - the ranks below are what measures learning.'}</div>`
+    : `<div class="note">Today was already banked. <b>Day ${days}</b> of the current streak.</div>`;
+  $('#sumMoved').innerHTML = moved.length
+    ? `<div><div class="label" style="margin-bottom:10px">Moved up</div>
+       <div class="miss-list">${moved.map(m=>
+         `<div class="miss"><span class="t">${m.t}</span>
+          <span class="d">${RANKS[m.from]} <span style="color:var(--good)">&rarr;</span> <b style="color:var(--text)">${RANKS[m.to]}</b></span></div>`).join('')}</div></div>`
+    : '';
+  $('#sumMiss').innerHTML=misses.length
+    ?`<div><div class="label" style="margin-bottom:10px">Back in rotation tomorrow</div>
+      <div class="miss-list">${misses.map(m=>`<div class="miss"><span class="t">${m.e.t}</span><span class="d">${m.e.d}</span></div>`).join('')}</div></div>`
+    :`<div class="note"><b>A clean run.</b> Every word moved up a rank.</div>`;
+  go('s-sum');
+  if(canMove()) gsap.timeline()
+    .fromTo('[data-sum]',{y:20,opacity:0},{y:0,opacity:1,duration:.8,stagger:.12})
+    .add(()=>roll($('#sumN'),score,1.4),.15);
+  else roll($('#sumN'),score);
+}
+function start(kind){
+  runKind = (typeof kind==='number') ? kind : runKind;
+  QS=buildRun(runKind);
+  clearPending();
+  qi=0;score=0;combo=0;best=0;correct=0;misses=[];moved=[];
+  $('#scoreEl').textContent='0';
+  $('#pips').innerHTML=QS.map(()=>'<span class="pip"></span>').join('');
+  gsap.set('#rule',{height:1,backgroundColor:css('--line')});
+  runHead();
+  go('s-run'); renderQ();
+}
+
+/* -- screens -------------------------------------------------- */
+function paintHome(animate){
+  const n=streakLen(), doneToday=ST.days.includes(today());
+  $('#stL').innerHTML = n===1?'day streak':'day streak';
+  $('#week').innerHTML=[6,5,4,3,2,1,0].map(k=>{
+    const key=backFrom(k), on=ST.days.includes(key);
+    const L=['S','M','T','W','T','F','S'][new Date(key+'T00:00:00').getDay()];
+    return `<span class="day ${on?'on':''} ${k===0?'now':''}">
+      <i><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></i>
+      <span>${L}</span></span>`;
+  }).join('');
+  $('#stMsg').innerHTML = doneToday
+    ? (ST.best>n ? `Today is banked. Your best run of days is <b>${ST.best}</b>.` : `Today is banked. This is your longest streak yet.`)
+    : (n>0 ? `Finish one run today to keep your <b>${n}-day</b> streak.`
+           : `Finish a run today to start a streak.`);
+  $('#games').innerHTML=GAMES.map((g,i)=>{
+    const W=wallNow(), items=W.filter(w=>w[1]===i);
+    const wild=items.filter(w=>w[2]===2).length;
+    const segs=[0,1,2].map(r=>{
+      const n=items.filter(w=>w[2]===r).length;
+      return n?`<span class="gfill" style="flex:${n} 0 0;background:${css(KIND[i].v)};opacity:${[.30,.62,1][r]}"></span>`:'';
+    }).join('');
+    return `<button class="game" data-game="${i}">
+      <span class="stripe" style="background:${css(KIND[i].v)}"></span>
+      <span class="gbody">
+        <span class="gn" style="display:block">${g.n}</span>
+        <span class="gbar">${segs}</span>
+      </span>
+      <span class="gright"><span class="gnum">${items.length}</span><span class="glbl">${wild} used</span></span>
+    </button>`;
+  }).join('');
+  $('#games').onclick=ev=>{ const b=ev.target.closest('.game'); if(b) start(+b.dataset.game) };
+  if(animate && canMove()){
+    gsap.fromTo('[data-in]',{y:20,opacity:0,filter:'blur(9px)'},
+      {y:0,opacity:1,filter:'blur(0px)',duration:1,stagger:.1,delay:.15});
+    settle('[data-in]',2600);
+  }
+}
+function paintColl(){
+  const W=wallNow();
+  $('#collSub').innerHTML=`${W.length} entries &middot; ${W.filter(x=>x[2]===2).length} used`;
+  paintWall(false);
+  const body=$('#collInner'); body.innerHTML='';
+  /* Queued entries get their own section rather than being scattered
+     through the ranks. Awaiting-a-definition is a different axis from
+     how well you know it, and listing them twice helped nobody. */
+  if(INBOX.length) body.insertAdjacentHTML('beforeend',
+    `<div class="tier-head" style="margin-top:0"><span class="label">Queue</span><span class="r2"></span><span class="label num">${INBOX.length}</span></div>
+     <p class="quiet q-note">Caught, not yet written up. They sit on the wall as New, and stay out of the games, until they have a definition.</p>
+     <div class="wall">${INBOX.map(x=>
+       `<button class="chip" data-t="${esc(x.t)}"><span class="dotc" style="background:${css(KIND[x.k].v)};opacity:.3"></span><span>${esc(x.t)}</span></button>`).join('')}</div>
+     <button class="btn btn-ghost btn-sm" id="copyQ" style="margin-top:13px">Copy the queue</button>
+     <textarea class="q-paste" id="qPaste" rows="5" readonly hidden></textarea>`);
+  const cq=$('#copyQ'); if(cq) cq.onclick=copyQueue;
+  [2,1,0].forEach(rank=>{
+    const items=W.filter(w=>w[2]===rank&&!inboxOf(w[0])); if(!items.length)return;
+    body.insertAdjacentHTML('beforeend',
+      `<div class="tier-head"><span class="label">${RANKS[rank]}</span><span class="r2"></span><span class="label num">${items.length}</span></div>
+       <div class="wall">${items.map(([t,k,r])=>
+         `<button class="chip" data-t="${esc(t)}" data-r="${r}"><span class="dotc" style="background:${r>0?css(KIND[k].v):'transparent'};opacity:${[.34,.66,1][r]}"></span><span>${esc(t)}</span></button>`).join('')}</div>`);
+  });
+  if(canMove()) gsap.fromTo('#collInner .tier-head, #collInner .chip',{y:10,opacity:0},
+    {y:0,opacity:1,duration:.55,stagger:.012,delay:.35});
+  body.onclick=ev=>{const c=ev.target.closest('.chip'); if(!c)return; paintDet(c.dataset.t,+c.dataset.r); go('s-det')};
+}
+/* The queue has to leave the phone somehow, and the entries are written
+   by hand afterwards - so what comes out is the whole of what a writer
+   needs, in the order it was caught. */
+function queueJSON(){
+  return JSON.stringify(INBOX.slice().sort((a,b)=>a.added-b.added).map(x=>({
+    term:x.t, kind:KIND1[x.k], note:x.note||'',
+    caught:new Date(x.added).toISOString().slice(0,10)
+  })),null,2);
+}
+function copyQueue(){
+  const btn=$('#copyQ'), ta=$('#qPaste'), text=queueJSON();
+  const fallback=()=>{
+    /* The clipboard is blocked in more places than people expect - an
+       insecure origin, a denied permission, an old webview. Never leave
+       them holding nothing: put the text on screen to copy by hand. */
+    ta.value=text; ta.hidden=false; ta.focus(); ta.select();
+    btn.textContent='Select and copy the text below';
+  };
+  try{
+    navigator.clipboard.writeText(text).then(()=>{
+      btn.textContent=`Copied ${INBOX.length} ${INBOX.length===1?'entry':'entries'}`;
+      setTimeout(()=>{ if($('#copyQ')) btn.textContent='Copy the queue' },3200);
+    }, fallback);
+  }catch(e){ fallback() }
+}
+const ALL=()=>Object.values(E).concat(Object.values(P),Object.values(C));
+function paintDet(t,r){
+  r=rankOf(t);                       /* the chip's rank may be stale */
+  const e=ALL().find(x=>x.t===t), q=inboxOf(t);
+  $('#detBody').innerHTML=`
+    <div data-det><div class="det-w">${esc(t)}</div>
+      <div class="meta">${e&&e.p?`<span class="pron">${e.p}</span>`:''}${e&&e.pos?`<span class="pos">${e.pos}</span>`:''}</div></div>
+    ${e?`<p data-det style="font-size:17px;font-weight:300;line-height:1.6">${e.d}</p>`
+       :'<p data-det class="quiet" style="font-size:15px">Definition not written yet \u2014 it\u2019s in the queue.</p>'}
+    ${usedRec(t)&&usedRec(t).where?`<div data-det><div class="label" style="margin-bottom:9px">Where you used it</div>
+      <div class="note">${esc(usedRec(t).where)}</div></div>`:''}
+    ${q?`<div data-det>${q.note?`<div class="label" style="margin-bottom:9px">Where you met it</div>
+        <div class="note">${esc(q.note)}</div>`:''}
+      <p class="quiet" style="margin-top:${q.note?'12px':'0'}">Caught ${new Date(q.added).toLocaleDateString(undefined,{day:'numeric',month:'long'})} &middot; ${KIND1[q.k]}</p></div>`:''}
+    ${e&&(e.s||e.scene||e.right)?`<div data-det><div class="label" style="margin-bottom:9px">In use</div>
+      <p class="det-s">${(e.s||'').replace('____',`<span style="color:var(--ultra);font-style:normal">${t.toLowerCase()}</span>`)||e.scene||e.right}</p></div>`:''}
+    ${e&&e.n?`<div data-det><div class="label" style="margin-bottom:9px">Register</div><div class="note">${e.n}</div></div>`:''}
+    <div data-det><div class="label" style="margin-bottom:9px">Rank</div>
+      <div class="ranks">${RANKS.map((x,i)=>`<div class="rank ${i<=r?'on':''}">${x}</div>`).join('')}</div></div>
+    <div data-det style="margin-top:auto">${r===2
+      ?`<div class="note"><b>Used.</b> ${usedRec(t)&&usedRec(t).at?`Logged ${fmtDay(usedRec(t).at)}. `:''}Out of rotation.</div>`
+      :`<button class="btn btn-ghost" id="wildBtn">I used this</button>`}
+      ${q?`<button class="btn btn-ghost btn-sm" id="dropBtn" style="margin-top:9px">Remove from the queue</button>`:''}</div>`;
+  if(canMove()) gsap.fromTo('[data-det]',{y:14,opacity:0},{y:0,opacity:1,duration:.7,stagger:.07});
+  const db=$('#dropBtn');
+  if(db) db.onclick=()=>{
+    INBOX=INBOX.filter(x=>norm(x.t)!==norm(t)); saveInbox();
+    go('s-coll'); paintColl();
+  };
+  const wb=$('#wildBtn');
+  if(wb) wb.onclick=()=>{
+    /* The rank is the valuable half and it saves immediately - the note
+       is a bonus, so it gets a field instead of being a question the
+       screen had no way to hear the answer to. */
+    setRank(t,2); USED[t]={at:Date.now(),where:''}; saveUsed(); buzz([8,34,8,34,16]);
+    $$('#detBody .rank').forEach((el,i)=>el.classList.toggle('on',i<=2));
+    const box=document.createElement('div');
+    box.className='used-form';
+    box.innerHTML=`<label class="label" for="usedWhere">Where did you use it?</label>
+      <input class="add-in" id="usedWhere" autocomplete="off" placeholder="in the Tuesday review">
+      <button class="btn btn-ghost btn-sm" id="usedSave">Save the note</button>`;
+    wb.replaceWith(box);
+    const inp=$('#usedWhere');
+    const save=()=>{
+      const v=inp.value.trim();
+      USED[t]={at:(usedRec(t)||{}).at||Date.now(), where:v}; saveUsed();
+      box.innerHTML=`<div class="note"><b>Logged.</b> ${v?esc(v):'Out of rotation.'}</div>`;
+      if(canMove()) gsap.fromTo(box.firstChild,{opacity:0},{opacity:1,duration:.5});
+    };
+    $('#usedSave').onclick=save;
+    inp.onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); save() } };
+    if(canMove()) gsap.fromTo(box,{y:10,opacity:0},{y:0,opacity:1,duration:.55});
+    setTimeout(()=>inp.focus(),CALM?0:320);
+  };
+}
+/* -- add ------------------------------------------------------ */
+let addKind=0;
+function paintKinds(){
+  $('#addKinds').innerHTML=KIND.map((k,i)=>
+    `<button class="kind-opt ${i===addKind?'on':''}" data-k="${i}" ${i===addKind?'aria-current="true"':''}>
+       <span class="dotc" style="background:${css(k.v)}"></span>${KIND1[i]}</button>`).join('');
+}
+function paintQueueList(){
+  const el=$('#addRecent');
+  if(!INBOX.length){ el.innerHTML=''; return }
+  const show=INBOX.slice().sort((a,b)=>b.added-a.added).slice(0,6);
+  el.innerHTML=`<div class="label" style="margin-bottom:10px">In the queue &middot; ${INBOX.length}</div>
+    <div class="miss-list">${show.map(x=>
+      `<div class="miss q"><span class="dotc" style="background:${css(KIND[x.k].v)};opacity:.45"></span>
+        <span class="t">${esc(x.t)}</span>
+        <button class="drop" data-drop="${esc(x.t)}" aria-label="Remove ${esc(x.t)}">&times;</button></div>`).join('')}</div>
+    ${INBOX.length>show.length?`<p class="quiet" style="margin-top:9px">and ${INBOX.length-show.length} more, in the collection</p>`:''}`;
+}
+function addEntry(){
+  /* Collapse the whitespace and nothing else. Capitals, hyphens and
+     accents are all part of how the entry will be written up. */
+  const raw=$('#addTerm').value.trim().replace(/\s+/g,' ');
+  const warn=$('#addWarn');
+  if(!raw){ warn.textContent='Type a word first.'; warn.hidden=false; $('#addTerm').focus(); return }
+  if(known(raw)){
+    warn.innerHTML=`<b>${esc(raw)}</b> is already in the collection.`;
+    warn.hidden=false; return;
+  }
+  warn.hidden=true;
+  INBOX.push({t:raw,k:addKind,note:$('#addNote').value.trim(),added:Date.now()});
+  saveInbox(); buzz([6,26,10]);
+  $('#addSub').innerHTML=`<b style="color:var(--good)">Added.</b> ${esc(raw)} is on the wall as New.`;
+  /* Cleared and focused, because the second word is usually right
+     behind the first. */
+  $('#addTerm').value=''; $('#addNote').value='';
+  paintQueueList();
+  if(canMove()) gsap.fromTo('#addRecent .miss:first-child',{y:-9,opacity:0},{y:0,opacity:1,duration:.55});
+  $('#addTerm').focus();
+}
+function openAdd(){
+  $('#addTerm').value=''; $('#addNote').value='';
+  $('#addWarn').hidden=true;
+  $('#addSub').textContent='Catch it now, write it up later';
+  paintKinds(); paintQueueList();
+  go('s-add');
+  const sel='#s-add .add-field, #s-add #addGo, #s-add #addRecent';
+  if(canMove()) gsap.fromTo(sel,{y:14,opacity:0},{y:0,opacity:1,duration:.7,stagger:.07});
+  settle(sel,2200);
+  setTimeout(()=>$('#addTerm').focus(),CALM?0:430);
+}
+$('#addBtn').onclick=openAdd;
+$('#addGo').onclick=addEntry;
+$('#addKinds').onclick=ev=>{
+  const b=ev.target.closest('.kind-opt'); if(!b)return;
+  addKind=+b.dataset.k; paintKinds();
+};
+$('#addRecent').onclick=ev=>{
+  const b=ev.target.closest('[data-drop]'); if(!b)return;
+  INBOX=INBOX.filter(x=>norm(x.t)!==norm(b.dataset.drop));
+  saveInbox(); paintQueueList();
+};
+$('#addTerm').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); addEntry() } };
+
+$('#againBtn').onclick=()=>start();
+$('#homeBtn').onclick=()=>{go('s-home');paintHome(true)};
+$('#collBtn').onclick=()=>{go('s-coll');paintColl()};
+$$('[data-go]').forEach(b=>b.onclick=()=>{
+  go(b.dataset.go);
+  if(b.dataset.go==='s-coll')paintColl(); else if(b.dataset.go==='s-home')paintHome(true);
+});
+$('#themeBtn').onclick=()=>{
+  const cur=document.documentElement.getAttribute('data-theme');
+  const sysDark=matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.setAttribute('data-theme',cur?(cur==='dark'?'light':'dark'):(sysDark?'light':'dark'));
+  murals.clear(); paintWall(false); paintHome(false);
+};
+let rz; addEventListener('resize',()=>{clearTimeout(rz); rz=setTimeout(()=>{
+  murals.clear(); paintWall(false); paintHome(false);
+},200)});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if($('#s-run').classList.contains('active')) askQuit();
+    else if(!$('#s-home').classList.contains('active')){ go('s-home'); paintHome(true) }
+    return;
+  }
+  if(!$('#s-run').classList.contains('active'))return;
+  if(locked){
+    if(e.key==='Enter'||e.key===' '){ e.preventDefault(); const b=$('#nextBtn'); b&&b.click() }
+    return;
+  }
+  const n=+e.key; if(n>=1&&n<=4){const o=$$('.opt')[n-1]; o&&o.click()}
+});
+paintWall(true);
+if(!ticking){ gsap.ticker.add(renderMurals); ticking=true }
+paintHome(true);
+/* Loaded in a background tab? Nothing animated, but everything is visible.
+   Give them the entrance the first time they actually look. */
+/* Last resort: whatever happened above, nothing inside the app stays
+   invisible because of an inline style we wrote. */
+setTimeout(()=>{
+  document.querySelectorAll('#app [style]').forEach(el=>{
+    if(el.style.opacity!=='' && +el.style.opacity<1 && el.style.display!=='none'){
+      el.style.removeProperty('opacity'); el.style.removeProperty('filter');
+    }
+  });
+},4000);
+let greeted=VIS();
+document.addEventListener('visibilitychange',()=>{
+  if(!VIS()||greeted) return;
+  greeted=true;
+  if($('#s-home').classList.contains('active')) paintHome(true);
+});
+</script>
+
+</body></html>
