@@ -463,7 +463,7 @@ body{background:var(--paper); color:var(--text); font-family:'Archivo',system-ui
 </div></div>
 
 <script>
-/* === deck \u2014 real entries from DJ's list === */
+/* === deck === */
 const E={
  ersatz:{t:'Ersatz',p:'/\u02c8er\u02ccz\u00e4ts/',pos:'adj.',k:0,d:'an inferior substitute passed off as the real thing',
   s:'The conference offered an ____ intimacy: name tags, assigned seats, eleven minutes per conversation.',
@@ -534,25 +534,26 @@ const Q={
   alt:['hope','star','craft'],
   n:'Ahab rejects instruments that tell him where he is but not where the whale is.'}
 };
-/* k: 0 word \u00b7 1 phrase \u00b7 2 concept \u00b7 3 quote \u2014 hue. r: 0\u20133 rank \u2014 fill. */
+/* k: 0 word \u00b7 1 phrase \u00b7 2 concept \u00b7 3 quote \u2014 hue.
+   Everything ships New; rank is earned in the app and kept per browser. */
 const WALL=[
- ['Anfractuous',0,3],['Obsequious',0,2],['Parsimony',0,3],['Alacrity',0,2],['Ersatz',0,3],
- ['Recalcitrant',0,2],['Temerity',0,1],['Supercilious',0,2],['Feckless',0,3],['Sartorial',0,1],
- ['Apotheosis',0,1],['Pernicious',0,2],['Capricious',0,2],['Intransigent',0,1],['Defenestration',0,3],
- ['Puerile',0,2],['Mondegreen',0,0],['Aptronym',0,0],['Diapason',0,0],['Sublunary',0,0],
- ['Daedalian',0,0],['Parisology',0,0],['Raisonneur',0,0],['Anathema',0,2],['Miasma',0,2],
- ['Simulacrum',0,1],['Scurrilous',0,0],['Inveterate',0,0],['Equanimity',0,2],['Obviate',0,1],
- ['Rapacious',0,2],['Specious',0,2],['Venerable',0,3],['Guile',0,2],['Myopia',0,3],['Ethos',0,3],
- ['Neologism',0,1],['Celerity',0,0],['Impugn',0,1],['Heterodoxy',0,0],['Internecine',0,1],
- ['Apparatchiks',0,1],['Ossified',0,2],['Galvanic',0,1],['Censoriousness',0,0],['Delphic',0,0],
- ['Pleonasm',0,0],['Lyceum',0,0],['Dilettante',0,2],['Irascible',0,2],['Despondent',0,3],
- ['Hoi polloi',1,3],['Bully pulpit',1,3],['Third rail',1,3],['Sine qua non',1,2],['Table stakes',1,3],
- ['Watershed moment',1,2],['In-kind',1,1],['Dirty pool',1,1],['Per se',1,3],['Inverted yield curve',1,0],
- ['Walled garden',1,2],['Death knell',1,2],['At loggerheads',1,2],['Whataboutism',1,3],
- ['Loss aversion',2,3],['Hedonic habituation',2,1],['Chekhov\u2019s gun',2,3],['Normalization of deviance',2,1],
- ['Omission bias',2,0],['Occam\u2019s razor',2,3],['Maslow\u2019s hierarchy',2,2],['Kaizen',2,1],['Kayfabe',2,2],
+ ['Anfractuous',0,0],['Obsequious',0,0],['Parsimony',0,0],['Alacrity',0,0],['Ersatz',0,0],
+ ['Recalcitrant',0,0],['Temerity',0,0],['Supercilious',0,0],['Feckless',0,0],['Sartorial',0,0],
+ ['Apotheosis',0,0],['Pernicious',0,0],['Capricious',0,0],['Intransigent',0,0],['Defenestration',0,0],
+ ['Puerile',0,0],['Mondegreen',0,0],['Aptronym',0,0],['Diapason',0,0],['Sublunary',0,0],
+ ['Daedalian',0,0],['Parisology',0,0],['Raisonneur',0,0],['Anathema',0,0],['Miasma',0,0],
+ ['Simulacrum',0,0],['Scurrilous',0,0],['Inveterate',0,0],['Equanimity',0,0],['Obviate',0,0],
+ ['Rapacious',0,0],['Specious',0,0],['Venerable',0,0],['Guile',0,0],['Myopia',0,0],['Ethos',0,0],
+ ['Neologism',0,0],['Celerity',0,0],['Impugn',0,0],['Heterodoxy',0,0],['Internecine',0,0],
+ ['Apparatchiks',0,0],['Ossified',0,0],['Galvanic',0,0],['Censoriousness',0,0],['Delphic',0,0],
+ ['Pleonasm',0,0],['Lyceum',0,0],['Dilettante',0,0],['Irascible',0,0],['Despondent',0,0],
+ ['Hoi polloi',1,0],['Bully pulpit',1,0],['Third rail',1,0],['Sine qua non',1,0],['Table stakes',1,0],
+ ['Watershed moment',1,0],['In-kind',1,0],['Dirty pool',1,0],['Per se',1,0],['Inverted yield curve',1,0],
+ ['Walled garden',1,0],['Death knell',1,0],['At loggerheads',1,0],['Whataboutism',1,0],
+ ['Loss aversion',2,0],['Hedonic habituation',2,0],['Chekhov\u2019s gun',2,0],['Normalization of deviance',2,0],
+ ['Omission bias',2,0],['Occam\u2019s razor',2,0],['Maslow\u2019s hierarchy',2,0],['Kaizen',2,0],['Kayfabe',2,0],
  ['Eudaimonia',2,0],['Hedonia',2,0],['The Shepherd tone',2,0],
- ['\u201c\u2026a damp, drizzly November in my soul\u201d',3,2],['\u201cScience! Curse thee, thou vain toy!\u201d',3,1]
+ ['\u201c\u2026a damp, drizzly November in my soul\u201d',3,0],['\u201cScience! Curse thee, thou vain toy!\u201d',3,0]
 ];
 /* WALL holds each entry's STARTING rank. What it is now lives here and
    in localStorage, so answering actually moves a word and the wall
