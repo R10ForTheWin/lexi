@@ -66,3 +66,8 @@ nothing bounces or overshoots. Animations are never the only thing between the
 reader and the content — anything that fades in is force-settled on a timer in
 case the ticker stalls in a background tab. Full keyboard control: `1`–`4` pick
 an answer, `Enter` advances, `Escape` leaves.
+
+## Credits
+
+The glass-wall photographs in `Style/` are the author's own, and their metadata
+has been stripped. Everything else is original.
