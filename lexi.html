@@ -20,6 +20,7 @@
   --text:#1B2340; --text-soft:#5A6279; --text-dim:#8D94A6;
   --ultra:#2B4FC8; --ultra-wash:rgba(43,79,200,.08);
   --cyan:#3FA9C9; --amber:#E0A03A; --stone:#9BA2AA; --cream:#E6DEBE;
+  --iris:#6B68B8;
   --good:#2F8A5E; --good-wash:rgba(47,138,94,.10);
   --bad:#D2542A;  --bad-wash:rgba(210,84,42,.10);
   --ink-on-accent:#FFFFFF;
@@ -35,6 +36,7 @@
   --text:#EAEDF5; --text-soft:#A3ACC4; --text-dim:#6E7899;
   --ultra:#6E92F0; --ultra-wash:rgba(110,146,240,.14);
   --cyan:#59C6E0; --amber:#F0BC63; --stone:#9BA5B8; --cream:#D8CFA8;
+  --iris:#9A97E0;
   --good:#5FC08A; --good-wash:rgba(95,192,138,.14);
   --bad:#F08A5D;  --bad-wash:rgba(240,138,93,.13);
   --ink-on-accent:#0F1730;
@@ -48,6 +50,7 @@
   --text:#EAEDF5; --text-soft:#A3ACC4; --text-dim:#6E7899;
   --ultra:#6E92F0; --ultra-wash:rgba(110,146,240,.14);
   --cyan:#59C6E0; --amber:#F0BC63; --stone:#9BA5B8; --cream:#D8CFA8;
+  --iris:#9A97E0;
   --good:#5FC08A; --good-wash:rgba(95,192,138,.14);
   --bad:#F08A5D;  --bad-wash:rgba(240,138,93,.13);
   --ink-on-accent:#0F1730;
@@ -212,6 +215,30 @@ body{background:var(--paper); color:var(--text); font-family:'Archivo',system-ui
 .opt.wrong .k{border-color:var(--bad); color:var(--bad)}
 .opt-term{font-family:'Instrument Serif',Georgia,serif; font-size:21px; font-weight:400; letter-spacing:-.01em}
 
+.legs{display:flex; flex-wrap:wrap; gap:8px; margin-top:16px}
+.leg{font-family:'Instrument Serif',Georgia,serif; font-size:21px; line-height:1;
+  padding:9px 16px; border:1px solid var(--line); border-radius:var(--r-sm);
+  background:var(--surface-2); color:var(--text)}
+.leg.gap{min-width:104px; border-style:dashed; border-color:var(--iris); background:transparent}
+.leg.gap.shown{border-style:solid; color:var(--iris)}
+.cite{font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.04em;
+  text-transform:uppercase; color:var(--text-dim); margin-top:12px}
+.emba-pad{padding:10px 26px 30px; flex:1; display:flex; flex-direction:column; gap:26px}
+.tagline{font-family:'Instrument Serif',Georgia,serif; font-style:italic;
+  font-size:26px; line-height:1.3; color:var(--text); letter-spacing:-.015em;
+  border-left:2px solid var(--amber); padding-left:18px}
+.classes{}
+.class-row{display:flex; flex-wrap:wrap; gap:7px; margin-top:9px}
+.class-opt{display:flex; align-items:center; gap:9px; padding:9px 15px 9px 11px; background:transparent;
+  border:1px solid var(--line); border-radius:99px; cursor:pointer; font-family:inherit;
+  font-size:13px; font-weight:300; color:var(--text-soft); transition:border-color .4s, color .4s}
+.class-opt:hover{border-color:var(--iris)}
+.class-opt.on{border-color:var(--iris); color:var(--text)}
+.tick{width:14px; height:14px; border-radius:4px; border:1.5px solid var(--line);
+  display:grid; place-items:center; flex:none; transition:background .3s, border-color .3s}
+.class-opt.on .tick{background:var(--iris); border-color:var(--iris)}
+.tick svg{opacity:0; transition:opacity .3s}
+.class-opt.on .tick svg{opacity:1}
 .slots{display:flex; flex-wrap:wrap; gap:6px; justify-content:center; min-height:44px; align-items:center}
 .slot{width:28px; height:40px; border-bottom:1.5px solid var(--line); display:grid; place-items:center;
   font-family:'Instrument Serif',Georgia,serif; font-size:24px; color:var(--ultra)}
@@ -410,6 +437,26 @@ body{background:var(--paper); color:var(--text); font-family:'Archivo',system-ui
     </div>
   </section>
 
+  <!-- EMBA Forever does not start on the tap. The deck spans courses, so
+       the question of which ones are in play comes before the first
+       question, not buried in a settings screen nobody opens. -->
+  <section class="screen" id="s-emba">
+    <div class="head">
+      <button class="back" data-go="s-home" aria-label="Back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div><div class="label">EMBA Forever</div><div class="quiet" style="margin-top:4px" id="embaSub"></div></div>
+      <button class="icon-btn" data-go="s-home" style="margin-left:auto" aria-label="Home">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/></svg>
+      </button>
+    </div>
+    <div class="emba-pad">
+      <p class="tagline" data-emba>An EMBA question a day keeps the brainrot away.</p>
+      <div class="classes" id="classes" data-emba></div>
+      <div style="margin-top:auto" data-emba>
+        <button class="btn btn-go" id="embaGo">Start</button>
+      </div>
+    </div>
+  </section>
+
   <section class="screen" id="s-coll">
     <div class="head">
       <button class="back" data-go="s-home" aria-label="Back"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button>
@@ -520,6 +567,48 @@ const C={
   scene:'Before theorising about coordinated sabotage, note that the intern pushed to the wrong branch at 4pm.',
   n:'A tie-breaker between theories that fit equally well - not proof the simple one is true.'}
 };
+/* One day a classmate opens this wanting only the two courses they are
+   actually taking, so the class is a first-class thing with an id, not a
+   string copied onto each entry. Adding a course means one row here and
+   a cls tag on its entries. */
+const CLASSES=[
+ {id:'mktg411', n:'411 · Marketing Management', short:'411 Marketing', prof:'Prof. Zeithammer'}
+];
+const classOf=id=>CLASSES.find(c=>c.id===id);
+const citeOf=e=>{ const c=e&&e.cls&&classOf(e.cls); return c?c.n+' · '+c.prof:'' };
+const M={
+ threec:{t:'The 3 C’s',pos:'framework',k:2,cls:'mktg411',
+  d:'the three parties a strategy has to answer to at once — you, the buyer, and whoever else wants the buyer',
+  when:'A plan reads well on its own terms and you want to know which question it never asked.',
+  legs:[
+   {t:'Company',d:'what you can actually do — cost base, capability, and what you are willing to cannibalise',
+    scene:'The feature tests beautifully, but shipping it means retraining the entire support floor.',
+    gap:'The deck promised same-day fulfilment in every market. Nobody had checked whether the warehouses could do it.'},
+   {t:'Customer',d:'who is buying, and the job they are hiring the product to do',
+    scene:'Two-thirds of signups never open the reporting tab that every one of them asked for.',
+    gap:'They priced against the rival and built to their own roadmap. No one in the room had spoken to a buyer in a year.'},
+   {t:'Competition',d:'what rivals can do about it, and how fast',
+    scene:'They can match the price inside a quarter; they cannot match the integration for a year.',
+    gap:'The margin case assumed the price would hold. It held for five weeks.'}],
+  n:'Kenichi Ohmae, 1982. A plan that answers one C is a plan; a strategy answers all three. Collaborators is a later bolt-on — which is why you sometimes hear four.'},
+ fourp:{t:'The 4 P’s',pos:'framework',k:2,cls:'mktg411',
+  d:'the marketing mix — the four levers you control before the buyer decides anything',
+  when:'Demand is not arriving and you need to find which lever was never pulled.',
+  legs:[
+   {t:'Product',d:'the thing itself, including what owning it signals about the buyer',
+    scene:'Dropping the matte finish saved eleven cents, and the reviews turned on it within a week.',
+    gap:'Three campaigns, a price cut and a new channel. Nobody was willing to say the thing itself was mediocre.'},
+   {t:'Price',d:'what you charge and the shape of it — tiers, anchors, discounts',
+    scene:'Nobody bought the middle plan until they added a third one above it.',
+    gap:'Beautiful product, heavy advertising, shelves everywhere, and a number picked by adding a margin to cost.'},
+   {t:'Place',d:'distribution — the whole channel by which it reaches the buyer, not a shop',
+    scene:'It sells fine in the app and dies on the retail shelf, because there the box has to do the talking.',
+    gap:'They had the product, the price and the campaign, and no answer for how any of it would reach a buyer.'},
+   {t:'Promotion',d:'how the buyer comes to hear of it and be persuaded',
+    scene:'The spend was real. The message changed four times in six weeks.',
+    gap:'The best cold-brew in the category, fairly priced, in every grocer in the state, and nobody had heard of it.'}],
+  n:'E. Jerome McCarthy, 1960; Kotler carried it. Place is the one people fumble — it means the entire distribution channel. Services stretch it to 7 P’s: People, Process, Physical evidence.'}
+};
 const Q={
  november:{t:'A damp, drizzly November',pos:'Moby-Dick, ch. 1',k:3,
   d:'Ishmael, on why he goes to sea',
@@ -553,6 +642,7 @@ const WALL=[
  ['Loss aversion',2,0],['Hedonic habituation',2,0],['Chekhov\u2019s gun',2,0],['Normalization of deviance',2,0],
  ['Omission bias',2,0],['Occam\u2019s razor',2,0],['Maslow\u2019s hierarchy',2,0],['Kaizen',2,0],['Kayfabe',2,0],
  ['Eudaimonia',2,0],['Hedonia',2,0],['The Shepherd tone',2,0],
+ ['The 3 C\u2019s',2,0],['The 4 P\u2019s',2,0],
  ['\u201c\u2026a damp, drizzly November in my soul\u201d',3,0],['\u201cScience! Curse thee, thou vain toy!\u201d',3,0]
 ];
 /* WALL holds each entry's STARTING rank. What it is now lives here and
@@ -620,7 +710,22 @@ const known=t=>WALL.some(w=>norm(w[0])===norm(t))||!!inboxOf(t);
    that is the whole reward for dropping one. */
 const wallNow=()=>WALL.map(([t,k,r])=>[t,k,rankOf(t)])
   .concat(INBOX.map(x=>[x.t,x.k,rankOf(x.t)]));
-const KIND=[{n:'Words',v:'--ultra'},{n:'Phrases',v:'--cyan'},{n:'Concepts',v:'--amber'},{n:'Quotes',v:'--stone'}];
+/* Which classes the MBA deck is allowed to draw from. Stored as the ids
+   that are ON, so a course added later is in by default rather than
+   silently missing for everyone who has opened the app before. An empty
+   set means every class - a deck you have switched entirely off is a
+   dead end, not a filter. */
+const CLS='lexi.classes.v1';
+let CLSOFF=(()=>{ try{ const v=JSON.parse(localStorage.getItem(CLS)); return Array.isArray(v)?v:[] }catch(e){ return [] } })();
+function saveCls(){ try{ localStorage.setItem(CLS,JSON.stringify(CLSOFF)) }catch(e){} }
+const clsOn=id=>!CLSOFF.includes(id);
+/* Entries with no class - every word, phrase, concept and quote - are
+   never filtered by a control that does not describe them. */
+const inClass=list=>{
+  const kept=list.filter(e=>!e.cls||clsOn(e.cls));
+  return kept.length?kept:list;
+};
+const KIND=[{n:'Words',v:'--ultra'},{n:'Phrases',v:'--cyan'},{n:'EMBA Forever',v:'--amber'},{n:'Quotes',v:'--stone'}];
 const KIND1=['Word','Phrase','Concept','Quote'];   /* the deck names, singular, for picking one */
 /* Three ranks, not four. "Seen" and "Learning" were the same thing
    wearing different names, and nobody could say what separated them. */
@@ -958,20 +1063,27 @@ function showMural(cv,items,seed,scale,animate){
 }
 
 /* -- run state ------------------------------------------------ */
-const DECK=[Object.values(E),Object.values(P),Object.values(C),Object.values(Q)];
+/* Concepts and frameworks are one deck: a named pattern and a named
+   checklist are both things you either see in front of you or you do
+   not. What differs is the question, and that is chosen per entry. */
+const DECK=[Object.values(E),Object.values(P),Object.values(C).concat(Object.values(M)),Object.values(Q)];
 const GAMES=[
  {n:'Vocabulary'},
  {n:'Phrases'},
- {n:'Concepts'},
+ {n:'EMBA Forever'},
  {n:'Quotes'}
 ];
-const LABEL={fill:'Context fill',bank:'Recall',typed:'Recall',usage:'Usage',concept:'Name the pattern',quote:'Finish the line'};
+/* Whichever deck carries course material is the one that asks which
+   courses first. Derived, so moving the deck cannot desync the route. */
+const EMBA=DECK.findIndex(d=>d.some(e=>e.cls));
+const LABEL={fill:'Context fill',bank:'Recall',typed:'Recall',usage:'Usage',concept:'Name the pattern',quote:'Finish the line',
+  place:'Place the move',miss:'Spot the miss',set:'Complete the set',name:'Which lens'};
 /* Each game is its own run. Mixing a Challenger scenario with a rare
    adjective and a line of Melville tested nothing coherent - they are
    different skills, so they get different decks and different verbs. */
 const PLAN=[['fill','fill','bank','fill','typed'],
             ['usage','usage','usage','usage'],
-            ['concept','concept','concept','concept'],
+            ['auto','auto','auto','auto'],
             ['quote','quote']];
 function choices(e,kind){
   const pool=WALL.filter(w=>w[1]===kind&&w[0]!==e.t).map(w=>w[0]);
@@ -982,15 +1094,52 @@ function buildRun(kind){
   /* A word you have used in the wild is retired - the entry screen says
      "out of rotation", so it had better be. Fall back to the whole deck
      only if retiring would leave too little to play. */
-  const all=DECK[kind], due=all.filter(e=>rankOf(e.t)<2);
+  const all=inClass(DECK[kind]), due=all.filter(e=>rankOf(e.t)<2);
   const pool=shuffle(due.length>=2?due:all);
+  const frames=all.filter(e=>e.legs);
+  const n=PLAN[kind].length;
+  /* A deck called EMBA Forever that draws four concepts and no framework
+     is a deck that lied about itself. Two frameworks among fourteen
+     entries would do exactly that more often than not, so if the hand
+     dealt none, one is dealt in. */
+  if(frames.length && !pool.slice(0,n).some(e=>e.legs)){
+    const f=frames[Math.floor(Math.random()*frames.length)];
+    const at=pool.indexOf(f);
+    if(at>=0) [pool[0],pool[at]]=[pool[at],pool[0]];
+    else pool[0]=f;
+  }
+  /* A framework hands out its legs in a shuffled order and never repeats
+     one inside a run - asking twice about Place tests nothing the first
+     ask did not. Its verbs rotate the same way. */
+  const legq=new Map(), verbq=new Map();
+  const nextLeg=e=>{
+    let ls=legq.get(e); if(!ls||!ls.length){ ls=shuffle(e.legs); legq.set(e,ls) }
+    return ls.shift();
+  };
+  /* The entry decides the question. A concept can only be named from its
+     scene; a framework can be placed, audited or recited, and "which
+     lens" joins the rotation once there are four frameworks to tell
+     apart - below that it is a coin toss. */
+  const nextVerb=e=>{
+    if(!e.legs) return 'concept';
+    let vs=verbq.get(e);
+    if(!vs||!vs.length){ vs=shuffle(['place','miss','set'].concat(frames.length>=4?['name']:[])); verbq.set(e,vs) }
+    return vs.shift();
+  };
+  const others=e=>shuffle(frames.filter(x=>x!==e).map(x=>x.t)).slice(0,3);
   return PLAN[kind].map((type,i)=>{
     const e=pool[i%pool.length];
-    const tier=type==='bank'?'Letters':type==='typed'?'Typed':'Choice';
-    const mult=type==='bank'?1.5:type==='typed'?2:1;
+    if(type==='auto') type=nextVerb(e);
+    const tier=type==='bank'?'Letters':(type==='typed'||type==='set')?'Typed':'Choice';
+    const mult=type==='bank'?1.5:type==='typed'?2:type==='set'?1.5:1;
     const q={kind:LABEL[type],tier,mult,type,e};
     if(type==='fill'||type==='concept') q.opts=choices(e,kind);
     if(type==='quote') q.opts=shuffle([e.answer].concat(e.alt));
+    /* A framework's distractors are its own legs. Offering "Occam's razor"
+       against "Place" would not be a question. */
+    if(type==='place'||type==='miss'){ q.leg=nextLeg(e); q.opts=shuffle(e.legs.map(l=>l.t)) }
+    if(type==='set') q.leg=nextLeg(e);
+    if(type==='name') q.opts=shuffle([e.t].concat(others(e)));
     return q;
   });
 }
@@ -1073,6 +1222,16 @@ function renderQ(){
       <p class="sent scene" style="margin-top:14px">${q.e.scene}</p>`);
     opts.innerHTML=q.opts.map((o,i)=>`<button class="opt"><span class="k">${i+1}</span><span>${o}</span></button>`).join('');
     wire(o=>o===q.e.t,q);
+  } else if(q.type==='place'||q.type==='name'){
+    card.innerHTML=shell(`<div class="label">${q.type==='name'?'The situation':q.e.t+' &middot; which leg?'}</div>
+      <p class="sent scene" style="margin-top:14px">${q.type==='name'?q.e.when:q.leg.scene}</p>`);
+    opts.innerHTML=q.opts.map((o,i)=>`<button class="opt"><span class="k">${i+1}</span><span>${o}</span></button>`).join('');
+    wire(o=>o===(q.type==='name'?q.e.t:q.leg.t),q);
+  } else if(q.type==='miss'){
+    card.innerHTML=shell(`<div class="label">${q.e.t} &middot; which one did they skip?</div>
+      <p class="sent scene" style="margin-top:14px">${q.leg.gap}</p>`);
+    opts.innerHTML=q.opts.map((o,i)=>`<button class="opt"><span class="k">${i+1}</span><span>${o}</span></button>`).join('');
+    wire(o=>o===q.leg.t,q);
   } else if(q.type==='usage'){
     const pair=Math.random()<.5?[q.e.right,q.e.wrong]:[q.e.wrong,q.e.right];
     card.innerHTML=shell(`<div class="headword">${q.e.t}</div>
@@ -1101,16 +1260,30 @@ function renderQ(){
       }
     };
   } else {
-    card.innerHTML=shell(`<div class="label">${q.e.pos} &middot; type the word</div>
-      <p class="defn">${q.e.d}</p>
-      <p class="sent" style="margin-top:14px;font-size:15px;color:var(--text-soft)">${q.e.s.replace('____','<span style="border-bottom:1.5px solid var(--ultra);padding:0 26px"></span>')}</p>`);
+    /* Typed recall and Complete the set ask the same thing of the hand -
+       one target, spelled from memory - so they share everything below
+       the card and differ only in what the card puts above it. */
+    const target=q.leg?q.leg.t:q.e.t;
+    card.innerHTML=q.type==='set'
+      ? shell(`<div class="label">${q.e.t} &middot; name the missing one</div>
+          <div class="legs">${q.e.legs.map(l=>l===q.leg
+            ? '<span class="leg gap" id="blankLeg"></span>'
+            : `<span class="leg">${l.t}</span>`).join('')}</div>
+          <p class="defn" style="margin-top:18px">${q.leg.d}</p>`)
+      : shell(`<div class="label">${q.e.pos} &middot; type the word</div>
+          <p class="defn">${q.e.d}</p>
+          <p class="sent" style="margin-top:14px;font-size:15px;color:var(--text-soft)">${q.e.s.replace('____','<span style="border-bottom:1.5px solid var(--ultra);padding:0 26px"></span>')}</p>`);
     opts.innerHTML=`<input class="type-in" id="typeIn" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="&hellip;">
       <button class="btn btn-go btn-sm" id="typeGo" style="margin-top:9px">Check</button>`;
     const inp=$('#typeIn'); gsap.delayedCall(.5,()=>inp.focus());
     const submit=()=>{
       if(locked)return;
-      const g=inp.value.trim().toLowerCase(), w=q.e.t.toLowerCase(), d=lev(g,w);
+      const g=inp.value.trim().toLowerCase(), w=target.toLowerCase(), d=lev(g,w);
       inp.disabled=true;
+      /* The blank in the leg row fills in either way - the point of the
+         question is to see the set whole. */
+      const bl=$('#blankLeg');
+      if(bl){ bl.textContent=target; bl.classList.add('shown') }
       if(d===0) judge(true,q);
       else if(d<=2&&g.length>3) judge(true,q,`Close enough \u2014 it's <b>${w}</b>`);
       else {inp.value=w; inp.style.borderColor=css('--bad'); judge(false,q)}
@@ -1186,10 +1359,15 @@ function judge(ok,q,extra){
      never on screen - there was nothing to read even before it vanished. */
   const e=q.e, rv=document.createElement('div');
   rv.className='reveal';
-  rv.innerHTML=`<div class="rw">${e.answer||e.t}`
+  /* On a framework the turn was about one leg, so the leg is what the
+     reveal has to name - the framework itself is already on the card. */
+  const head=q.leg?q.leg.t:(e.answer||e.t);
+  const body=q.leg?q.leg.d:e.d;
+  rv.innerHTML=`<div class="rw">${head}`
     +(e.p?`<span class="rp">${e.p}</span>`:'')
-    +(e.pos?`<span class="rpos">${e.pos}</span>`:'')
-    +`</div>`+(e.d?`<div class="rd">${e.d}</div>`:'');
+    +(e.pos?`<span class="rpos">${q.leg?e.t:e.pos}</span>`:'')
+    +`</div>`+(body?`<div class="rd">${body}</div>`:'')
+    +(citeOf(e)?`<div class="cite">${citeOf(e)}</div>`:'');
   cardEl.appendChild(rv);
   cardEl.appendChild(v);
   gsap.fromTo(v,{y:10,opacity:0},{y:0,opacity:1,duration:.6,delay:.12});
@@ -1296,12 +1474,50 @@ function paintHome(animate){
       <span class="gright"><span class="gnum">${items.length}</span><span class="glbl">${wild} used</span></span>
     </button>`;
   }).join('');
-  $('#games').onclick=ev=>{ const b=ev.target.closest('.game'); if(b) start(+b.dataset.game) };
+  $('#games').onclick=ev=>{
+    const b=ev.target.closest('.game'); if(!b)return;
+    const k=+b.dataset.game;
+    k===EMBA ? paintEmba() : start(k);
+  };
   if(animate && canMove()){
     gsap.fromTo('[data-in]',{y:20,opacity:0,filter:'blur(9px)'},
       {y:0,opacity:1,filter:'blur(0px)',duration:1,stagger:.1,delay:.15});
     settle('[data-in]',2600);
   }
+}
+/* Every class is listed and ticked. Unticking the last one would leave
+   the deck with nothing to ask, so an empty selection means every class
+   rather than none - see inClass. */
+function paintClasses(){
+  const box=$('#classes');
+  if(!CLASSES.length){ box.hidden=true; box.innerHTML=''; return }
+  box.hidden=false;
+  const tick=`<span class="tick"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--ink-on-accent)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></span>`;
+  box.innerHTML=`<span class="label">Include</span>
+    <div class="class-row">${CLASSES.map(c=>
+      `<button class="class-opt ${clsOn(c.id)?'on':''}" data-cls="${c.id}"
+         role="checkbox" aria-checked="${clsOn(c.id)}">${tick}${esc(c.short||c.n)}</button>`).join('')}</div>
+    <p class="quiet" style="margin-top:12px">${CLASSES.every(c=>!clsOn(c.id))
+      ? 'Nothing ticked, so every class is in play.'
+      : 'Concepts are always in - they belong to no course.'}</p>`;
+  box.onclick=ev=>{
+    const b=ev.target.closest('.class-opt'); if(!b)return;
+    const id=b.dataset.cls;
+    CLSOFF=clsOn(id)?CLSOFF.concat(id):CLSOFF.filter(x=>x!==id);
+    saveCls(); buzz(6); paintClasses(); embaSub();
+  };
+}
+/* The count has to answer the only question the screen raises: with
+   these ticked, how much is actually in the deck. */
+function embaSub(){
+  const n=inClass(DECK[EMBA]).length, f=inClass(DECK[EMBA]).filter(e=>e.legs).length;
+  $('#embaSub').textContent=`${n} in play · ${f} framework${f===1?'':'s'}`;
+}
+function paintEmba(){
+  paintClasses(); embaSub(); go('s-emba');
+  if(canMove()) gsap.fromTo('[data-emba]',{y:18,opacity:0,filter:'blur(8px)'},
+    {y:0,opacity:1,filter:'blur(0px)',duration:.9,stagger:.09});
+  settle('[data-emba]',2400);
 }
 function paintColl(){
   const W=wallNow();
@@ -1355,7 +1571,7 @@ function copyQueue(){
     }, fallback);
   }catch(e){ fallback() }
 }
-const ALL=()=>Object.values(E).concat(Object.values(P),Object.values(C));
+const ALL=()=>Object.values(E).concat(Object.values(P),Object.values(C),Object.values(M));
 function paintDet(t,r){
   r=rankOf(t);                       /* the chip's rank may be stale */
   const e=ALL().find(x=>x.t===t), q=inboxOf(t);
@@ -1369,6 +1585,10 @@ function paintDet(t,r){
     ${q?`<div data-det>${q.note?`<div class="label" style="margin-bottom:9px">Where you met it</div>
         <div class="note">${esc(q.note)}</div>`:''}
       <p class="quiet" style="margin-top:${q.note?'12px':'0'}">Caught ${new Date(q.added).toLocaleDateString(undefined,{day:'numeric',month:'long'})} &middot; ${KIND1[q.k]}</p></div>`:''}
+    ${e&&e.legs?`<div data-det><div class="label" style="margin-bottom:9px">The legs</div>
+      ${e.legs.map(l=>`<p class="det-s" style="margin-bottom:11px"><b style="font-style:normal;color:var(--iris)">${l.t}</b> &mdash; ${l.d}</p>`).join('')}</div>`:''}
+    ${citeOf(e)?`<div data-det><div class="label" style="margin-bottom:9px">Where it came from</div>
+      <div class="note">${citeOf(e)}</div></div>`:''}
     ${e&&(e.s||e.scene||e.right)?`<div data-det><div class="label" style="margin-bottom:9px">In use</div>
       <p class="det-s">${(e.s||'').replace('____',`<span style="color:var(--ultra);font-style:normal">${t.toLowerCase()}</span>`)||e.scene||e.right}</p></div>`:''}
     ${e&&e.n?`<div data-det><div class="label" style="margin-bottom:9px">Register</div><div class="note">${e.n}</div></div>`:''}
@@ -1476,6 +1696,7 @@ $('#addTerm').onkeydown=e=>{ if(e.key==='Enter'){ e.preventDefault(); addEntry()
 $('#againBtn').onclick=()=>start();
 $('#homeBtn').onclick=()=>{go('s-home');paintHome(true)};
 $('#collBtn').onclick=()=>{go('s-coll');paintColl()};
+$('#embaGo').onclick=()=>start(EMBA);
 $$('[data-go]').forEach(b=>b.onclick=()=>{
   go(b.dataset.go);
   if(b.dataset.go==='s-coll')paintColl(); else if(b.dataset.go==='s-home')paintHome(true);

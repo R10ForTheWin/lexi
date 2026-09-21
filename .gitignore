@@ -1,1 +1,6 @@
 .DS_Store
+
+# The camera originals stay local. What ships is the stripped,
+# resized JPEG - see the commit that removed IMG_8108.heic.
+*.heic
+*.HEIC
