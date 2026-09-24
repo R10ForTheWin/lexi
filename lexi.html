@@ -621,7 +621,13 @@ const Q={
   s:'Science! Curse thee, thou vain ____!',
   answer:'toy',
   alt:['hope','star','craft'],
-  n:'Ahab rejects instruments that tell him where he is but not where the whale is.'}
+  n:'Ahab rejects instruments that tell him where he is but not where the whale is.'},
+ belongs:{t:'Nothing belongs to you',pos:'Source unknown',k:3,
+  d:'on loss, and what was never yours to begin with',
+  s:'What are you afraid of losing, when nothing in the world actually ____ to you?',
+  answer:'belongs',
+  alt:['matters','answers','returns'],
+  n:'Passed around as Marcus Aurelius, but it is in no translation of the Meditations. The thought is genuinely Stoic — Epictetus says to call a thing given back, never lost — so keep the line and drop the name.'}
 };
 /* k: 0 word \u00b7 1 phrase \u00b7 2 concept \u00b7 3 quote \u2014 hue.
    Everything ships New; rank is earned in the app and kept per browser. */
@@ -643,7 +649,8 @@ const WALL=[
  ['Omission bias',2,0],['Occam\u2019s razor',2,0],['Maslow\u2019s hierarchy',2,0],['Kaizen',2,0],['Kayfabe',2,0],
  ['Eudaimonia',2,0],['Hedonia',2,0],['The Shepherd tone',2,0],
  ['The 3 C\u2019s',2,0],['The 4 P\u2019s',2,0],
- ['\u201c\u2026a damp, drizzly November in my soul\u201d',3,0],['\u201cScience! Curse thee, thou vain toy!\u201d',3,0]
+ ['A damp, drizzly November',3,0],['Thou vain toy',3,0],
+ ['Nothing belongs to you',3,0]
 ];
 /* WALL holds each entry's STARTING rank. What it is now lives here and
    in localStorage, so answering actually moves a word and the wall
