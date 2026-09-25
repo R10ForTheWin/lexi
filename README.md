@@ -31,9 +31,10 @@ undifferentiated quiz:
 | **Quotes** | finish the line |
 
 Entries move through three ranks — **New → Known → Used**. Ranks only ever go
-up; a word you missed simply comes back sooner. A word reaches *Used* when you
-tell the app you said or wrote it somewhere real, and it then drops out of
-rotation.
+up; a word you missed simply comes back sooner. Each run is dealt missed
+entries first, then ones never asked, then whichever has waited longest. A
+word reaches *Used* when you tell the app you said or wrote it somewhere real,
+and it then drops out of rotation.
 
 ## EMBA Forever
 
@@ -117,6 +118,7 @@ Everything is local to the browser, in `localStorage`:
 | `lexi.best.v1` | best run score, per deck |
 | `lexi.used.v2` | when you used a word, and where, by entry code |
 | `lexi.classes.v1` | which classes the MBA deck is switched *off* for |
+| `lexi.seen.v1` | when each entry last came up, and whether it was missed |
 
 Ranks and used-records are filed under each entry's **code** — its key in
 `E`, `P`, `C`, `M` or `Q` (`vaintoy`, `threec`) — not its title, so a title can

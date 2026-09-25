@@ -175,17 +175,6 @@ body{background:var(--paper); color:var(--text); font-family:'Archivo',system-ui
 .run-top{padding:max(18px,env(safe-area-inset-top,18px)) 26px 0}
 /* A run is four minutes, but there is never a screen you cannot leave. */
 .run-head{display:flex; align-items:center; gap:11px; min-height:30px; margin-bottom:14px}
-.exit{background:none; border:1px solid var(--line); color:var(--text-dim); width:28px; height:28px;
-  border-radius:50%; cursor:pointer; display:grid; place-items:center; flex:none;
-  transition:border-color .4s, color .4s}
-.exit:hover{border-color:var(--bad); color:var(--bad)}
-.confirm{display:flex; align-items:center; gap:8px; width:100%}
-.confirm .q{font-size:13px; font-weight:300; color:var(--text-soft); margin-right:auto}
-.mini{font-family:inherit; font-size:12px; padding:6px 13px; border-radius:99px; cursor:pointer;
-  border:1px solid var(--line); background:transparent; color:var(--text-soft);
-  transition:border-color .3s, color .3s}
-.mini:hover{border-color:var(--ultra); color:var(--ultra)}
-.mini.leave:hover{border-color:var(--bad); color:var(--bad)}
 /* combo as a single thread that gains ply ? never flashes, just thickens */
 .rail{height:7px; display:flex; align-items:center; margin-bottom:13px}
 .rule{width:100%; height:1px; border-radius:99px; background:var(--line)}
@@ -793,6 +782,15 @@ function saveUsed(){ try{ localStorage.setItem(ULS,JSON.stringify(USED)) }catch(
 const usedRec=t=>{ const v=USED[keyOf(t)]; return (v&&typeof v==='object')?v:null };
 const setUsed=(t,rec)=>{ USED[keyOf(t)]=rec; saveUsed() };
 saveRank(); saveUsed();
+/* When each entry last came up in a run, and whether it was missed.
+   This is what deals the next run: missed first, then never asked, then
+   whatever has waited longest. Without it the draw was a plain shuffle,
+   and "comes back sooner" was a promise the code did not keep. */
+const SEENLS='lexi.seen.v1';
+const later=(a,b)=>((b&&b.at)||0)>((a&&a.at)||0)?b:a;
+let SEEN=refile(load(SEENLS),later);
+function saveSeen(){ try{ localStorage.setItem(SEENLS,JSON.stringify(SEEN)) }catch(e){} }
+const seenOf=t=>SEEN[keyOf(t)]||null;
 const fmtDay=ms=>new Date(ms).toLocaleDateString(undefined,{day:'numeric',month:'long'});
 const ILS='lexi.inbox.v1';
 let INBOX=(()=>{ try{ const v=JSON.parse(localStorage.getItem(ILS)); return Array.isArray(v)?v:[] }catch(e){ return [] } })();
@@ -1185,12 +1183,22 @@ function choices(e,kind){
   return shuffle([e.t].concat(shuffle(pool).slice(0,3)));
 }
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+/* Missed first, then never asked, then longest-waiting. Shuffled
+   before the sort so entries tied on a tier still come out in a new
+   order each time. */
+function dealt(list){
+  const tier=e=>{ const v=seenOf(e.t); return !v?1:v.miss?0:2 };
+  return shuffle(list).sort((a,b)=>{
+    const d=tier(a)-tier(b); if(d) return d;
+    return ((seenOf(a.t)||{}).at||0)-((seenOf(b.t)||{}).at||0);
+  });
+}
 function buildRun(kind){
   /* A word you have used in the wild is retired - the entry screen says
      "out of rotation", so it had better be. Fall back to the whole deck
      only if retiring would leave too little to play. */
   const all=inClass(DECK[kind]), due=all.filter(e=>rankOf(e.t)<2);
-  const pool=shuffle(due.length>=2?due:all);
+  const pool=dealt(due.length>=2?due:all);
   const frames=all.filter(e=>e.legs);
   const n=PLAN[kind].length;
   /* A deck called EMBA Forever that draws four concepts and no framework
@@ -1244,20 +1252,16 @@ let qi=0,score=0,combo=0,best=0,correct=0,misses=[],moved=[],locked=false;
    or the abandoned run walks on behind the home screen. */
 let pendTl=null, pendTo=null;
 function clearPending(){ if(pendTl){pendTl.kill();pendTl=null} if(pendTo){clearTimeout(pendTo);pendTo=null} }
+/* Home, the same icon as every other screen, and no "are you sure".
+   Every rank the run earned is saved the moment it is earned; leaving
+   costs the run's score and nothing else, which is not worth a
+   question. */
 function runHead(){
-  $('#runHead').innerHTML=`<button class="exit" id="exitBtn" aria-label="Quit run">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
-    </button><span class="label">${GAMES[runKind].n}</span>`;
-  $('#exitBtn').onclick=askQuit;
-}
-function askQuit(){
-  $('#runHead').innerHTML=`<span class="confirm">
-      <span class="q">Quit this run? Progress is kept.</span>
-      <button class="mini" id="stayBtn">Keep going</button>
-      <button class="mini leave" id="quitBtn">Quit</button>
-    </span>`;
-  $('#stayBtn').onclick=runHead;
-  $('#quitBtn').onclick=quitRun;
+  $('#runHead').innerHTML=`<span class="label">${GAMES[runKind].n}</span>
+    <button class="icon-btn" id="exitBtn" style="margin-left:auto" aria-label="Home">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5.5 9.5V21h13V9.5"/></svg>
+    </button>`;
+  $('#exitBtn').onclick=quitRun;
 }
 function quitRun(){
   clearPending(); locked=true;
@@ -1551,6 +1555,7 @@ function judge(ok,q,extra){
      that is the whole consequence. Knocking it down a rank would make the
      wall flicker backwards and punish you for meeting a hard word. */
   const term=q.e.t, was=rankOf(term);
+  SEEN[keyOf(term)]={at:Date.now(),miss:!ok}; saveSeen();
   if(ok && was<1 && setRank(term,was+1)) moved.push({t:term,from:was,to:was+1});
   if(ok){correct++;combo++;best=Math.max(best,combo);pts=Math.round(100*q.mult*mult());score+=pts;buzz([6,26,10])}
   else{combo=0;misses.push({i:qi,e:q.e});buzz(45)}
@@ -1628,7 +1633,7 @@ function finish(){
           <span class="d">${RANKS[m.from]} <span style="color:var(--good)">&rarr;</span> <b style="color:var(--text)">${RANKS[m.to]}</b></span></div>`).join('')}</div></div>`
     : '';
   $('#sumMiss').innerHTML=misses.length
-    ?`<div><div class="label" style="margin-bottom:10px">Back in rotation tomorrow</div>
+    ?`<div><div class="label" style="margin-bottom:10px">First in line next run</div>
       <div class="miss-list">${misses.map(m=>`<div class="miss"><span class="t">${m.e.t}</span><span class="d">${m.e.d}</span></div>`).join('')}</div></div>`
     :`<div class="note"><b>A clean run.</b> Every word moved up a rank.</div>`;
   go('s-sum');
@@ -1802,7 +1807,7 @@ function copyQueue(){
    icon deleted and re-added is a fresh start unless you carried the
    progress across yourself. The backup is plain text on purpose: it goes
    wherever text goes - Notes, a message to yourself, an email. */
-const BK_KEYS=[LS,SLS,ILS,BLS,ULS,CLS];
+const BK_KEYS=[LS,SLS,ILS,BLS,ULS,CLS,SEENLS];
 function backupText(){
   const data={};
   BK_KEYS.forEach(k=>{ try{ const v=localStorage.getItem(k); if(v!==null) data[k]=JSON.parse(v) }catch(e){} });
@@ -1837,6 +1842,7 @@ function restoreBackup(text){
   Object.entries(refile(d[LS],higher)).forEach(([k,v])=>{
     const was=RANK[k]; RANK[k]=higher(was,v); if(RANK[k]!==was) nR++ });
   Object.entries(refile(d[ULS],fuller)).forEach(([k,v])=>{ USED[k]=USED[k]?fuller(USED[k],v):v });
+  Object.entries(refile(d[SEENLS],later)).forEach(([k,v])=>{ SEEN[k]=later(SEEN[k],v) });
   const bs=d[SLS];
   if(bs&&Array.isArray(bs.days)){
     ST.days=[...new Set(ST.days.concat(bs.days.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x))))].sort().slice(-400);
@@ -1845,7 +1851,7 @@ function restoreBackup(text){
   if(Array.isArray(d[ILS])) d[ILS].forEach(x=>{ if(x&&x.t&&!inboxOf(x.t)) INBOX.push(x) });
   if(d[BLS]&&typeof d[BLS]==='object') Object.entries(d[BLS]).forEach(([k,v])=>{ BEST[k]=Math.max(+BEST[k]||0,+v||0) });
   if(!CLSOFF.length&&Array.isArray(d[CLS])) CLSOFF=d[CLS].slice();
-  saveRank(); saveUsed(); saveInbox(); saveBest(); saveCls();
+  saveRank(); saveUsed(); saveInbox(); saveBest(); saveCls(); saveSeen();
   try{ localStorage.setItem(SLS,JSON.stringify(ST)) }catch(e){}
   rev++; buzz([6,26,10]);
   const add=(n,one,many)=>n>0?`${n} ${n===1?one:many}`:'';
@@ -1996,7 +2002,7 @@ let rz; addEventListener('resize',()=>{clearTimeout(rz); rz=setTimeout(()=>{
 },200)});
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape'){
-    if($('#s-run').classList.contains('active')) askQuit();
+    if($('#s-run').classList.contains('active')) quitRun();
     else if(!$('#s-home').classList.contains('active')){ go('s-home'); paintHome(true) }
     return;
   }
