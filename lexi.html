@@ -363,6 +363,26 @@ body{background:var(--paper); color:var(--text); font-family:'Archivo',system-ui
 .add-in:focus{outline:none; border-color:var(--ultra)}
 .add-note{font-family:'Archivo',system-ui,sans-serif; font-size:14px; font-weight:300;
   line-height:1.55; resize:vertical}
+/* The mic: the industry glyph - a capsule on a stand, as in SF Symbols
+   and Material - drawn in the same 1.6 stroke as the house and the
+   moon. Listening is ultramarine and a slow breath, never a pulse. */
+.in-row{position:relative}
+.in-row .add-in{padding-right:58px}
+.mic{position:absolute; right:9px; top:50%; transform:translateY(-50%); width:38px; height:38px;
+  border-radius:50%; border:1px solid var(--line); background:transparent; color:var(--text-dim);
+  display:grid; place-items:center; cursor:pointer; transition:border-color .4s, color .4s, background .4s}
+.mic.top{top:9px; transform:none}
+.mic:hover{border-color:var(--ultra); color:var(--ultra)}
+.mic.on{border-color:var(--ultra); color:var(--ultra); background:var(--ultra-wash)}
+.mic .ring{position:absolute; inset:-1px; border-radius:50%; border:1px solid var(--ultra); opacity:0; pointer-events:none}
+.mic svg{position:relative}
+.alts{display:flex; flex-wrap:wrap; gap:7px; align-items:center}
+.alts .label{margin-right:3px}
+.alt{padding:7px 13px; border-radius:99px; border:1px solid var(--line); background:transparent; cursor:pointer;
+  font-family:'Instrument Serif',Georgia,serif; font-size:18px; color:var(--text); transition:border-color .4s}
+.alt:hover{border-color:var(--ultra)}
+.add-hint{font-size:12.5px; font-weight:300; color:var(--text-soft); line-height:1.5}
+.add-hint b{font-weight:500; color:var(--text)}
 .add-warn{font-size:12.5px; font-weight:300; color:var(--bad); line-height:1.5}
 .add-warn b{font-weight:500}
 .opt-lbl{text-transform:none; letter-spacing:0; font-family:'Archivo',system-ui,sans-serif;
@@ -534,7 +554,12 @@ body{background:var(--paper); color:var(--text); font-family:'Archivo',system-ui
     <div class="add-body">
       <div class="add-field">
         <label class="label" for="addTerm">The word or phrase</label>
-        <input class="add-in" id="addTerm" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="anfractuous">
+        <div class="in-row">
+          <input class="add-in" id="addTerm" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="anfractuous">
+          <button class="mic" data-mic="addTerm" aria-label="Say the word"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg><span class="ring"></span></button>
+        </div>
+        <div class="alts" id="addAlts" hidden></div>
+        <p class="add-hint" id="micHint" hidden></p>
         <p class="add-warn" id="addWarn" hidden></p>
       </div>
       <div class="add-field">
@@ -543,7 +568,10 @@ body{background:var(--paper); color:var(--text); font-family:'Archivo',system-ui
       </div>
       <div class="add-field">
         <label class="label" for="addNote">Where you met it <span class="opt-lbl">&mdash; optional</span></label>
-        <textarea class="add-in add-note" id="addNote" rows="2" placeholder="in the Melville, ch. 32"></textarea>
+        <div class="in-row">
+          <textarea class="add-in add-note" id="addNote" rows="2" placeholder="in the Melville, ch. 32"></textarea>
+          <button class="mic top" data-mic="addNote" aria-label="Say where you met it"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0"/><path d="M12 17.5V21"/></svg><span class="ring"></span></button>
+        </div>
       </div>
       <button class="btn btn-go" id="addGo">Add to the queue</button>
       <div id="addRecent"></div>
@@ -608,7 +636,39 @@ const C={
   n:'Why institutions default to inaction and call it prudence.'},
  occam:{t:'Occam\u2019s razor',pos:'concept',k:2,d:'prefer the explanation requiring the fewest assumptions',
   scene:'Before theorising about coordinated sabotage, note that the intern pushed to the wrong branch at 4pm.',
-  n:'A tie-breaker between theories that fit equally well - not proof the simple one is true.'}
+  n:'A tie-breaker between theories that fit equally well - not proof the simple one is true.'},
+ /* The stock quote. Seven numbers on every ticker page, asked against
+    each other - fam is what makes "Beta" compete with "Alpha" rather
+    than with Occam's razor. nl relabels the note: for these it is not
+    a register, it is why the number moves the price. */
+ beta:{t:'Beta',pos:'stock quote',k:2,fam:'quote',nl:'Why it moves the price',
+  d:'how hard a stock swings when the whole market swings - 1.0 moves with it, 1.5 half again as far, 0.5 half as far',
+  scene:'The index fell 2% on the jobs report. The chipmaker fell 3.4%; the utility, 0.8%.',
+  n:'Market risk is the one risk diversification cannot remove, so investors demand a higher return for carrying it - which means a lower price today for the same future earnings. And a high-beta stock amplifies every market move, up and down.'},
+ eps:{t:'EPS',pos:'stock quote',k:2,fam:'quote',nl:'Why it moves the price',
+  d:'earnings per share - the profit left for common shareholders, divided by the shares outstanding',
+  scene:'Profit was flat on the year, but the buyback retired a tenth of the shares - so each remaining share earned about 11% more.',
+  n:'Price is roughly EPS times the multiple the market will pay for it. What moves the stock on results day is EPS against the analysts’ estimate: a beat or a miss, not the number itself.'},
+ alpha:{t:'Alpha',pos:'stock quote',k:2,fam:'quote',nl:'Why it moves the price',
+  d:'the return beyond what the stock’s beta says it should have earned - the part the market does not explain',
+  scene:'The fund made 14% in a year the market made 10%. With a beta of 1.2, the market alone accounts for about 12 of that. The other two points are the manager’s claim.',
+  n:'Alpha measures a move after the fact rather than causing one: positive alpha means something specific to the company - or the manager - drove the price. It is what active funds charge for, and it tends to shrink once everyone can see it.'},
+ avgvol:{t:'Avg Vol',pos:'stock quote',k:2,fam:'quote',nl:'Why it moves the price',
+  d:'average daily volume - the shares that change hands on a typical day, usually averaged over three months',
+  scene:'It rose 6% on four times its usual trading. The week before, a 6% jump on half its usual trading had meant almost nothing.',
+  n:'Volume is conviction and liquidity. A move on heavy volume means a crowd agrees and tends to stick; on thin volume it can reverse by lunch. A thinly traded stock is also costly to get in and out of, so large funds stay away - and that absence weighs on the price.'},
+ pe:{t:'P/E',pos:'stock quote',k:2,fam:'quote',nl:'Why it moves the price',
+  d:'price divided by earnings per share - what the market pays for each dollar of profit',
+  scene:'Both companies earn $2 a share. One trades at $30, the other at $90 - because the market expects the second one’s earnings to triple.',
+  n:'P/E is expectations in one number. A high one has growth priced in, so the stock falls hard when growth merely slows; a low one can rise with no change in earnings, just the market deciding to pay more for them.'},
+ mktcap:{t:'Mkt Cap',pos:'stock quote',k:2,fam:'quote',nl:'Why it moves the price',
+  d:'market capitalisation - share price times shares outstanding; what the market says the whole company’s equity is worth',
+  scene:'Its shares cost $40 and its rival’s $400 - but it has twenty times as many shares, so it is the bigger company by half again.',
+  n:'Cap is price times shares, so it does not push the price by itself. What it decides is who is allowed to own the stock: crossing into an index like the S&P 500 forces every fund tracking it to buy. Smaller caps also tend to swing harder.'},
+ yield:{t:'Yield',pos:'stock quote',k:2,fam:'quote',nl:'Why it moves the price',
+  d:'dividend yield - the annual dividend per share divided by the share price',
+  scene:'The dividend held at $2 a share. The price slid from $50 to $40, and the yield rose from 4% to 5% without the company doing anything.',
+  n:'Yield competes with bonds. When interest rates rise, a 4% dividend looks worse beside a safer 5% Treasury, so dividend stocks fall until their yield catches up. A yield far above its peers is often the market doubting the dividend will last.'}
 };
 /* One day a classmate opens this wanting only the two courses they are
    actually taking, so the class is a first-class thing with an id, not a
@@ -692,6 +752,7 @@ const WALL=[
  ['Omission bias',2,0],['Occam\u2019s razor',2,0],['Maslow\u2019s hierarchy',2,0],['Kaizen',2,0],['Kayfabe',2,0],
  ['Eudaimonia',2,0],['Hedonia',2,0],['The Shepherd tone',2,0],
  ['The 3 C\u2019s',2,0],['The 4 P\u2019s',2,0],
+ ['Beta',2,0],['EPS',2,0],['Alpha',2,0],['Avg Vol',2,0],['P/E',2,0],['Mkt Cap',2,0],['Yield',2,0],
  ['A damp, drizzly November',3,0],['Thou vain toy',3,0],
  ['Nothing belongs to you',3,0]
 ];
@@ -1159,6 +1220,7 @@ function showMural(cv,items,seed,scale,animate){
 /* Concepts and frameworks are one deck: a named pattern and a named
    checklist are both things you either see in front of you or you do
    not. What differs is the question, and that is chosen per entry. */
+function ALL_ENTRIES(){ return [E,P,C,M,Q].flatMap(d=>Object.values(d)) }
 const DECK=[Object.values(E),Object.values(P),Object.values(C).concat(Object.values(M)),Object.values(Q)];
 const GAMES=[
  {n:'Vocabulary'},
@@ -1178,8 +1240,13 @@ const PLAN=[['fill','fill','bank','fill','typed'],
             ['usage','usage','usage','usage'],
             ['auto','auto','auto','auto'],
             ['quote','quote']];
+/* An entry in a family is asked against its own family, and nothing
+   else is asked against one - a stock metric beside Chekhov's gun is a
+   giveaway either way round. */
+const FAM=new Map(ALL_ENTRIES().filter(e=>e.fam).map(e=>[keyOf(e.t),e.fam]));
 function choices(e,kind){
-  const pool=WALL.filter(w=>w[1]===kind&&w[0]!==e.t).map(w=>w[0]);
+  const fam=e.fam||null;
+  const pool=WALL.filter(w=>w[1]===kind&&keyOf(w[0])!==keyOf(e.t)&&(FAM.get(keyOf(w[0]))||null)===fam).map(w=>w[0]);
   return shuffle([e.t].concat(shuffle(pool).slice(0,3)));
 }
 function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
@@ -1269,6 +1336,7 @@ function quitRun(){
 }
 const mult=()=>Math.min(3,1+combo*.1);
 function go(id){
+  if(typeof micOff==='function') micOff();       /* leaving the screen stops listening */
   $$('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
   /* The background wall lives in #weave, outside every .screen, so
      closest() gives null for it - and null is not "on a dead screen",
@@ -1859,10 +1927,12 @@ function restoreBackup(text){
   paintColl();
   say(`<b>Restored${b.at?' from '+esc(b.at):''}.</b> ${got.length?got.join(', ')+' brought across.':'Nothing new in it - this phone was already ahead.'} Nothing already here was lost.`);
 }
-const ALL=()=>Object.values(E).concat(Object.values(P),Object.values(C),Object.values(M));
+/* Every deck, quotes included - leaving Q out had every quote's page
+   claiming it was still waiting in the queue. */
+const ALL=()=>ALL_ENTRIES();
 function paintDet(t,r){
   r=rankOf(t);                       /* the chip's rank may be stale */
-  const e=ALL().find(x=>x.t===t), q=inboxOf(t);
+  const e=ALL().find(x=>keyOf(x.t)===keyOf(t)), q=inboxOf(t);
   $('#detBody').innerHTML=`
     <div data-det><div class="det-w">${esc(t)}</div>
       <div class="meta">${e&&e.p?`<span class="pron">${e.p}</span>`:''}${e&&e.pos?`<span class="pos">${e.pos}</span>`:''}</div></div>
@@ -1878,8 +1948,8 @@ function paintDet(t,r){
     ${citeOf(e)?`<div data-det><div class="label" style="margin-bottom:9px">Where it came from</div>
       <div class="note">${citeOf(e)}</div></div>`:''}
     ${e&&(e.s||e.scene||e.right)?`<div data-det><div class="label" style="margin-bottom:9px">In use</div>
-      <p class="det-s">${(e.s||'').replace('____',`<span style="color:var(--ultra);font-style:normal">${t.toLowerCase()}</span>`)||e.scene||e.right}</p></div>`:''}
-    ${e&&e.n?`<div data-det><div class="label" style="margin-bottom:9px">Register</div><div class="note">${e.n}</div></div>`:''}
+      <p class="det-s">${(e.s||'').replace('____',`<span style="color:var(--ultra);font-style:normal">${e.answer||t.toLowerCase()}</span>`)||e.scene||e.right}</p></div>`:''}
+    ${e&&e.n?`<div data-det><div class="label" style="margin-bottom:9px">${e.nl||'Register'}</div><div class="note">${e.n}</div></div>`:''}
     <div data-det><div class="label" style="margin-bottom:9px">Rank</div>
       <div class="ranks">${RANKS.map((x,i)=>`<div class="rank ${i<=r?'on':''}">${x}</div>`).join('')}</div></div>
     <div data-det style="margin-top:auto">${r===2
@@ -1918,6 +1988,69 @@ function paintDet(t,r){
     setTimeout(()=>inp.focus(),CALM?0:320);
   };
 }
+/* -- the mic --------------------------------------------------
+   Safari's own speech recognition, the same service as the keyboard's
+   dictation. Rare words are what this app collects and exactly what
+   recognition is worst at, so the word field keeps the top guess and
+   offers the runners-up to tap. Where recognition is missing or
+   refused - some iOS versions deny it to home-screen apps - the button
+   still does something useful: it hands you to the keyboard's mic. */
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let REC=null;
+function micOff(){
+  if(REC){ try{ REC.abort() }catch(e){} REC=null }
+  $$('.mic.on').forEach(b=>{ b.classList.remove('on'); gsap.killTweensOf(b.querySelector('.ring')); gsap.set(b.querySelector('.ring'),{opacity:0,scale:1}) });
+}
+function micHint(html){ const h=$('#micHint'); h.innerHTML=html; h.hidden=!html }
+const tidy=t=>String(t).trim().replace(/[.,!?;:]+$/,'');
+function keyboardMic(field){
+  micHint('Tap the <b>mic on your keyboard</b> and say it - voice here is not available in this mode.');
+  field.focus();
+}
+function listen(btn){
+  const field=$('#'+btn.dataset.mic), isTerm=field.id==='addTerm';
+  if(btn.classList.contains('on')){ if(REC) REC.stop(); return }
+  micOff(); micHint('');
+  if(!SR) return keyboardMic(field);
+  let rec; try{ rec=new SR() }catch(e){ return keyboardMic(field) }
+  REC=rec;
+  rec.lang=navigator.language||'en-US';
+  rec.interimResults=true; rec.continuous=false; rec.maxAlternatives=isTerm?5:1;
+  const before=field.value;
+  btn.classList.add('on'); buzz(6);
+  if(!CALM) gsap.fromTo(btn.querySelector('.ring'),{opacity:.55,scale:1},{opacity:0,scale:1.45,duration:1.8,ease:'sine.out',repeat:-1});
+  let heard=false;
+  rec.onresult=ev=>{
+    const res=ev.results[ev.results.length-1];
+    heard=true;
+    let text=tidy(res[0].transcript);
+    /* A term is one entry, so it replaces; a note is prose, so it adds on. */
+    if(!isTerm&&before.trim()) text=before.trim()+' '+text;
+    field.value=text;
+    if(isTerm) $('#addWarn').hidden=true;
+    if(res.isFinal&&isTerm){
+      const alts=[...new Set([...res].map(a=>tidy(a.transcript)).filter(Boolean))].filter(a=>a.toLowerCase()!==text.toLowerCase()).slice(0,4);
+      const box=$('#addAlts');
+      box.innerHTML=alts.length?`<span class="label">Or</span>${alts.map(a=>`<button class="alt">${esc(a)}</button>`).join('')}`:'';
+      box.hidden=!alts.length;
+    }
+  };
+  rec.onerror=ev=>{
+    if(ev.error==='not-allowed'||ev.error==='service-not-allowed'||ev.error==='audio-capture'){ micOff(); keyboardMic(field) }
+    else if(ev.error==='no-speech') micHint('Didn\u2019t catch anything. Tap the mic and try again.');
+  };
+  rec.onend=()=>{ if(REC===rec) micOff(); if(heard&&isTerm) field.focus() };
+  try{ rec.start() }catch(e){ micOff(); keyboardMic(field) }
+}
+$$('.mic').forEach(b=>b.onclick=()=>listen(b));
+$('#addAlts').onclick=ev=>{
+  const a=ev.target.closest('.alt'); if(!a) return;
+  const was=$('#addTerm').value;
+  $('#addTerm').value=a.textContent;
+  a.textContent=was;                              /* swap, so the old guess stays one tap away */
+  buzz(5);
+};
+
 /* -- add ------------------------------------------------------ */
 let addKind=0;
 function paintKinds(){
@@ -1953,13 +2086,14 @@ function addEntry(){
   /* Cleared and focused, because the second word is usually right
      behind the first. */
   $('#addTerm').value=''; $('#addNote').value='';
+  micOff(); micHint(''); $('#addAlts').hidden=true;
   paintQueueList();
   if(canMove()) gsap.fromTo('#addRecent .miss:first-child',{y:-9,opacity:0},{y:0,opacity:1,duration:.55});
   $('#addTerm').focus();
 }
 function openAdd(){
   $('#addTerm').value=''; $('#addNote').value='';
-  $('#addWarn').hidden=true;
+  $('#addWarn').hidden=true; micOff(); micHint(''); $('#addAlts').hidden=true;
   $('#addSub').textContent='Catch it now, write it up later';
   paintKinds(); paintQueueList();
   go('s-add');

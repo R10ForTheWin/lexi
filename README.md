@@ -61,7 +61,7 @@ framework's own legs:
 *Which lens* stays dormant while there are fewer than four frameworks, because
 picking between two is a coin toss. It switches itself on at the fourth.
 
-Two frameworks among fourteen entries would leave most runs with no framework
+Two frameworks among fifteen entries would leave most runs with no framework
 at all, so a run that draws none is dealt one. A deck called EMBA Forever that
 never asks an EMBA question is a deck that lied about its name.
 
@@ -82,11 +82,22 @@ on by default for anyone who has opened the app before. Unticking everything
 gives you every class rather than an empty deck: a deck switched entirely off
 is a dead end, not a filter.
 
+**Families.** Entries that belong together carry a `fam` tag and are asked
+only against each other. The seven stock-quote numbers (Beta, EPS, Alpha,
+Avg Vol, P/E, Mkt Cap, Yield) are one family, so the wrong answers for Beta
+are the other six, never Occam's razor. On their pages the note is headed
+*Why it moves the price* (`nl`) instead of *Register*.
+
 **The queue** is where words go when you meet one in the wild. Add a word, pick
 its kind, optionally note where you found it. It appears on the wall
 immediately as New and stays out of the games until someone writes its
 definition, example sentence and register note — the detail the games are
 built from. *Copy the queue* exports the pending words as JSON.
+
+Both fields on the add screen take voice. The mic uses Safari's speech
+recognition and shows its runner-up guesses as chips, because rare words are
+what it mishears; where iOS refuses recognition to a home-screen app, the mic
+points you to the one on the keyboard instead.
 
 ## The wall
 
