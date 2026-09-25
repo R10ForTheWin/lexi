@@ -1,5 +1,18 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found]){display:none!important}</style></head><body>
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Lexi</title>
+<!-- Home-screen app. The icon, the name under it, full screen with no
+     Safari chrome, and a status bar the colour of the paper it sits on. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Lexi">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#F7F7F6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0F1730" media="(prefers-color-scheme: dark)">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -58,22 +71,29 @@
   }
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}
+/* The phone. No grey flash on tap, no double-tap zoom stalling every
+   button for 300ms, no rubber-band dragging the whole wall around, and
+   the text size stays where it was set when the phone turns sideways. */
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
+body{-webkit-tap-highlight-color:transparent; overscroll-behavior:none}
+button,input,textarea,label,.chip{touch-action:manipulation}
 body{background:var(--paper); color:var(--text); font-family:'Archivo',system-ui,sans-serif;
   font-weight:400; -webkit-font-smoothing:antialiased; overflow-x:hidden}
-#field{min-height:100vh; display:flex; justify-content:center; background:var(--paper)}
+#field{min-height:100vh; min-height:100dvh; display:flex; justify-content:center; background:var(--paper)}
 /* The wall is the ground the whole app sits on, not decoration inside
    a box. Two layers of pale lobes drift against each other; everything
    above is translucent so the lattice reads through. */
 #weave{position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0}
 #weave canvas{position:absolute; inset:0; width:100%; height:100%}
 #wall{transition:opacity .6s}
-#app{width:100%; max-width:430px; min-height:100vh; position:relative; z-index:1; overflow:hidden;
+#app{width:100%; max-width:430px; min-height:100vh; min-height:100dvh; position:relative; z-index:1; overflow:hidden;
   background:color-mix(in srgb, var(--paper) 58%, transparent)}
 @media (min-width:462px){ #app{box-shadow:0 0 0 1px var(--line-soft)} }
 .num{font-variant-numeric:tabular-nums}
 .label{font-family:'IBM Plex Mono',monospace; font-size:9.5px; font-weight:400;
   letter-spacing:.22em; text-transform:uppercase; color:var(--text-dim)}
-.screen{display:none; flex-direction:column; min-height:100vh}
+.screen{display:none; flex-direction:column; min-height:100vh; min-height:100dvh}
 .screen.active{display:flex}
 
 /* -- HOME ? deliberately underfilled ------------------------- */
@@ -366,7 +386,28 @@ body{background:var(--paper); color:var(--text); font-family:'Archivo',system-ui
   font-size:11px; line-height:1.5; color:var(--text-soft); resize:vertical}
 
 :focus-visible{outline:1.5px solid var(--ultra); outline-offset:3px; border-radius:4px}
+
+/* iOS zooms the whole page into any field set smaller than 16px and
+   leaves it zoomed. Only the phone gets the bump, so the desktop keeps
+   the sizes the fields were drawn at. */
+@supports (-webkit-touch-callout:none){
+  .add-note, .used-form .add-in, .q-paste, .bk-in{font-size:16px}
+}
+
+/* -- BACKUP --------------------------------------------------- */
+.bk{margin-top:40px; padding-top:22px; border-top:1px solid var(--line-soft);
+  display:flex; flex-direction:column; gap:10px}
+.bk-row{display:flex; gap:9px}
+.bk-row .btn{flex:1}
+.bk-in{width:100%; background:var(--sunk); border:1px solid var(--line);
+  border-radius:var(--r-sm); padding:12px; font-family:'IBM Plex Mono',monospace;
+  font-size:11px; line-height:1.5; color:var(--text-soft); resize:vertical}
+.bk-in:focus{outline:none; border-color:var(--ultra)}
+.bk-msg{font-size:12.5px; font-weight:300; line-height:1.5; color:var(--text-soft)}
+.bk-msg.bad{color:var(--bad)}
+.bk-msg b{font-weight:500; color:var(--text)}
 </style>
+</head><body>
 
 <div id="weave"><canvas id="wall3d"></canvas><canvas id="wall"></canvas></div>
 <div id="field"><div id="app">
@@ -656,7 +697,34 @@ const WALL=[
    in localStorage, so answering actually moves a word and the wall
    actually fills - otherwise "the mural fills as you learn" is a poster,
    not a mechanic. */
-const LS='lexi.ranks.v2', SLS='lexi.streak.v1';
+const LS='lexi.ranks.v3', SLS='lexi.streak.v1';
+/* Progress is filed under each entry's permanent code - its key in E, P,
+   C, M or Q - never under its title. A title is copy: it gets reworded,
+   re-punctuated, shortened for the wall, and when ranks were filed by
+   title every one of those edits quietly reset the entry to New for
+   everybody. Rename freely; never change a code.
+   An entry with no write-up yet (a wall-only word, a queued one) files
+   under its spelling squashed - "Sine qua non" is sinequanon - so when
+   it is written up, whatever it had earned follows it to its code. */
+const slug=t=>String(t).normalize('NFKD').toLowerCase().replace(/[^a-z0-9]/g,'');
+const CODE=new Map();
+[E,P,C,M,Q].forEach(d=>Object.entries(d).forEach(([id,e])=>CODE.set(slug(e.t),id)));
+const keyOf=t=>CODE.get(slug(t))||slug(t);
+/* Re-files a saved map under today's codes, on every load. It is how the
+   title-keyed v2 data came across, and how a wall word picks up its rank
+   the day it gets a proper entry. Two old keys landing on one code keep
+   whichever record is further along - ranks never go down. */
+function refile(raw,better){
+  const out={};
+  Object.entries(raw&&typeof raw==='object'?raw:{}).forEach(([k,v])=>{
+    const c=keyOf(k);
+    out[c]=(c in out)?better(out[c],v):v;
+  });
+  return out;
+}
+/* Old versions are read, never deleted: the v2 map stays where it was,
+   a fallback nobody has to ask for. */
+const load=(...keys)=>{ for(const k of keys){ try{ const v=JSON.parse(localStorage.getItem(k)); if(v) return v }catch(e){} } return null };
 /* A streak counts days you finished a run. It is stored as the actual
    dates, never as a number - a stored counter cannot tell a missed day
    from a clock change, and would happily keep a streak you had broken. */
@@ -679,14 +747,16 @@ function markToday(){
   try{ localStorage.setItem(SLS,JSON.stringify(ST)) }catch(e){}
   return true;
 }
-let RANK=(()=>{ try{ return JSON.parse(localStorage.getItem(LS))||{} }catch(e){ return {} } })();
-const seedRank=t=>{ const w=WALL.find(x=>x[0]===t); return w?REMAP[w[2]]:0 };
-const rankOf=t=>RANK[t]!==undefined?RANK[t]:seedRank(t);
+const higher=(a,b)=>Math.max(+a||0,+b||0);
+let RANK=refile(load(LS,'lexi.ranks.v2'),higher);
+function saveRank(){ try{ localStorage.setItem(LS,JSON.stringify(RANK)) }catch(e){} }
+const seedRank=t=>{ const w=WALL.find(x=>keyOf(x[0])===keyOf(t)); return w?REMAP[w[2]]:0 };
+const rankOf=t=>{ const r=RANK[keyOf(t)]; return r!==undefined?r:seedRank(t) };
 let rev=0;
 function setRank(t,r){
   if(rankOf(t)===r) return false;
-  RANK[t]=r; rev++;
-  try{ localStorage.setItem(LS,JSON.stringify(RANK)) }catch(e){}
+  RANK[keyOf(t)]=r; rev++;
+  saveRank();
   return true;
 }
 /* -- the queue -------------------------------------------------
@@ -696,16 +766,20 @@ function setRank(t,r){
    only thing checked is that it is not already here. An entry sits on
    the wall as New until someone writes its definition - which is why
    the games never draw from it. */
-const BLS='lexi.best.v1', ULS='lexi.used.v1';
+const BLS='lexi.best.v1', ULS='lexi.used.v2';
 /* Per deck, not one number across all four: a two-question Quotes run
    and a five-question Vocabulary run are not the same ladder. */
 let BEST=(()=>{ try{ return JSON.parse(localStorage.getItem(BLS))||{} }catch(e){ return {} } })();
 function saveBest(){ try{ localStorage.setItem(BLS,JSON.stringify(BEST)) }catch(e){} }
 /* When you used a word, and where. The seeded Used entries predate this
    and have no record - so they say nothing rather than inventing a day. */
-let USED=(()=>{ try{ const v=JSON.parse(localStorage.getItem(ULS)); return v&&typeof v==='object'?v:{} }catch(e){ return {} } })();
+/* Two records for one entry: keep the one that says where. */
+const fuller=(a,b)=>(b&&b.where&&!(a&&a.where))?b:a;
+let USED=refile(load(ULS,'lexi.used.v1'),fuller);
 function saveUsed(){ try{ localStorage.setItem(ULS,JSON.stringify(USED)) }catch(e){} }
-const usedRec=t=>(USED[t]&&typeof USED[t]==='object')?USED[t]:null;
+const usedRec=t=>{ const v=USED[keyOf(t)]; return (v&&typeof v==='object')?v:null };
+const setUsed=(t,rec)=>{ USED[keyOf(t)]=rec; saveUsed() };
+saveRank(); saveUsed();
 const fmtDay=ms=>new Date(ms).toLocaleDateString(undefined,{day:'numeric',month:'long'});
 const ILS='lexi.inbox.v1';
 let INBOX=(()=>{ try{ const v=JSON.parse(localStorage.getItem(ILS)); return Array.isArray(v)?v:[] }catch(e){ return [] } })();
@@ -1453,6 +1527,8 @@ function start(kind){
 /* -- screens -------------------------------------------------- */
 function paintHome(animate){
   const n=streakLen(), doneToday=ST.days.includes(today());
+  /* the card said 0 whatever the dates held - nothing ever wrote it */
+  roll($('#stN'),n);
   $('#stL').innerHTML = n===1?'day streak':'day streak';
   $('#week').innerHTML=[6,5,4,3,2,1,0].map(k=>{
     const key=backFrom(k), on=ST.days.includes(key);
@@ -1549,6 +1625,24 @@ function paintColl(){
        <div class="wall">${items.map(([t,k,r])=>
          `<button class="chip" data-t="${esc(t)}" data-r="${r}"><span class="dotc" style="background:${r>0?css(KIND[k].v):'transparent'};opacity:${[.34,.66,1][r]}"></span><span>${esc(t)}</span></button>`).join('')}</div>`);
   });
+  body.insertAdjacentHTML('beforeend',`<div class="bk">
+      <span class="label">Your progress</span>
+      <p class="quiet">It lives on this phone and nowhere else. Copy a backup now and then; paste it back here on a new phone, or if the phone ever clears it.</p>
+      <div class="bk-row">
+        <button class="btn btn-ghost btn-sm" id="bkCopy">Copy backup</button>
+        <button class="btn btn-ghost btn-sm" id="bkOpen">Restore</button>
+      </div>
+      <textarea class="bk-in" id="bkText" rows="5" hidden spellcheck="false" autocapitalize="off" autocomplete="off"></textarea>
+      <button class="btn btn-go btn-sm" id="bkGo" hidden>Restore from this</button>
+      <p class="bk-msg" id="bkMsg" hidden></p>
+    </div>`);
+  $('#bkCopy').onclick=copyBackup;
+  $('#bkOpen').onclick=()=>{
+    const ta=$('#bkText');
+    ta.value=''; ta.readOnly=false; ta.placeholder='Paste the backup here';
+    ta.hidden=false; $('#bkGo').hidden=false; $('#bkMsg').hidden=true; ta.focus();
+  };
+  $('#bkGo').onclick=()=>restoreBackup($('#bkText').value);
   if(canMove()) gsap.fromTo('#collInner .tier-head, #collInner .chip',{y:10,opacity:0},
     {y:0,opacity:1,duration:.55,stagger:.012,delay:.35});
   body.onclick=ev=>{const c=ev.target.closest('.chip'); if(!c)return; paintDet(c.dataset.t,+c.dataset.r); go('s-det')};
@@ -1577,6 +1671,62 @@ function copyQueue(){
       setTimeout(()=>{ if($('#copyQ')) btn.textContent='Copy the queue' },3200);
     }, fallback);
   }catch(e){ fallback() }
+}
+/* -- backup ---------------------------------------------------
+   Everything is local, so a new phone, a cleared Safari or a home-screen
+   icon deleted and re-added is a fresh start unless you carried the
+   progress across yourself. The backup is plain text on purpose: it goes
+   wherever text goes - Notes, a message to yourself, an email. */
+const BK_KEYS=[LS,SLS,ILS,BLS,ULS,CLS];
+function backupText(){
+  const data={};
+  BK_KEYS.forEach(k=>{ try{ const v=localStorage.getItem(k); if(v!==null) data[k]=JSON.parse(v) }catch(e){} });
+  return JSON.stringify({lexi:1, at:today(), data});
+}
+function copyBackup(){
+  const btn=$('#bkCopy'), ta=$('#bkText'), text=backupText();
+  $('#bkGo').hidden=true; $('#bkMsg').hidden=true;
+  const fallback=()=>{
+    ta.value=text; ta.readOnly=true; ta.hidden=false; ta.focus(); ta.select();
+    btn.textContent='Select and copy below';
+  };
+  try{
+    navigator.clipboard.writeText(text).then(()=>{
+      btn.textContent='Copied';
+      setTimeout(()=>{ if($('#bkCopy')) btn.textContent='Copy backup' },3200);
+    }, fallback);
+  }catch(e){ fallback() }
+}
+/* Restoring MERGES; it never replaces. Ranks only go up, so the higher
+   of the two wins; streak days are a set of dates, so they are unioned;
+   the queue keeps every word from both. Pasting an old backup over newer
+   progress therefore costs nothing - the worst it can do is add. */
+function restoreBackup(text){
+  /* looked up at the moment of speaking - a restore repaints the screen */
+  const say=(h,bad)=>{ const m=$('#bkMsg'); if(!m) return;
+    m.innerHTML=h; m.classList.toggle('bad',!!bad); m.hidden=false; m.scrollIntoView({block:'center'}) };
+  let b; try{ b=JSON.parse(String(text).trim()) }catch(e){}
+  const d=b&&b.lexi&&b.data;
+  if(!d||typeof d!=='object') return say('That does not look like a Lexi backup. Paste the whole thing, from the first <b>{</b> to the last <b>}</b>.',true);
+  const nD=ST.days.length, nI=INBOX.length; let nR=0;
+  Object.entries(refile(d[LS],higher)).forEach(([k,v])=>{
+    const was=RANK[k]; RANK[k]=higher(was,v); if(RANK[k]!==was) nR++ });
+  Object.entries(refile(d[ULS],fuller)).forEach(([k,v])=>{ USED[k]=USED[k]?fuller(USED[k],v):v });
+  const bs=d[SLS];
+  if(bs&&Array.isArray(bs.days)){
+    ST.days=[...new Set(ST.days.concat(bs.days.filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x))))].sort().slice(-400);
+    ST.best=Math.max(ST.best||0, +bs.best||0, streakLen());
+  }
+  if(Array.isArray(d[ILS])) d[ILS].forEach(x=>{ if(x&&x.t&&!inboxOf(x.t)) INBOX.push(x) });
+  if(d[BLS]&&typeof d[BLS]==='object') Object.entries(d[BLS]).forEach(([k,v])=>{ BEST[k]=Math.max(+BEST[k]||0,+v||0) });
+  if(!CLSOFF.length&&Array.isArray(d[CLS])) CLSOFF=d[CLS].slice();
+  saveRank(); saveUsed(); saveInbox(); saveBest(); saveCls();
+  try{ localStorage.setItem(SLS,JSON.stringify(ST)) }catch(e){}
+  rev++; buzz([6,26,10]);
+  const add=(n,one,many)=>n>0?`${n} ${n===1?one:many}`:'';
+  const got=[add(nR,'rank','ranks'),add(ST.days.length-nD,'streak day','streak days'),add(INBOX.length-nI,'queued word','queued words')].filter(Boolean);
+  paintColl();
+  say(`<b>Restored${b.at?' from '+esc(b.at):''}.</b> ${got.length?got.join(', ')+' brought across.':'Nothing new in it - this phone was already ahead.'} Nothing already here was lost.`);
 }
 const ALL=()=>Object.values(E).concat(Object.values(P),Object.values(C),Object.values(M));
 function paintDet(t,r){
@@ -1616,7 +1766,7 @@ function paintDet(t,r){
     /* The rank is the valuable half and it saves immediately - the note
        is a bonus, so it gets a field instead of being a question the
        screen had no way to hear the answer to. */
-    setRank(t,2); USED[t]={at:Date.now(),where:''}; saveUsed(); buzz([8,34,8,34,16]);
+    setRank(t,2); setUsed(t,{at:Date.now(),where:''}); buzz([8,34,8,34,16]);
     $$('#detBody .rank').forEach((el,i)=>el.classList.toggle('on',i<=2));
     const box=document.createElement('div');
     box.className='used-form';
@@ -1627,7 +1777,7 @@ function paintDet(t,r){
     const inp=$('#usedWhere');
     const save=()=>{
       const v=inp.value.trim();
-      USED[t]={at:(usedRec(t)||{}).at||Date.now(), where:v}; saveUsed();
+      setUsed(t,{at:(usedRec(t)||{}).at||Date.now(), where:v});
       box.innerHTML=`<div class="note"><b>Logged.</b> ${v?esc(v):'Out of rotation.'}</div>`;
       if(canMove()) gsap.fromTo(box.firstChild,{opacity:0},{opacity:1,duration:.5});
     };
@@ -1712,6 +1862,8 @@ $('#themeBtn').onclick=()=>{
   const cur=document.documentElement.getAttribute('data-theme');
   const sysDark=matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.setAttribute('data-theme',cur?(cur==='dark'?'light':'dark'):(sysDark?'light':'dark'));
+  /* the status bar follows the switch, not just the system setting */
+  $$('meta[name="theme-color"]').forEach(m=>{ m.content=css('--paper'); m.removeAttribute('media') });
   murals.clear(); paintWall(false); paintHome(false);
 };
 let rz; addEventListener('resize',()=>{clearTimeout(rz); rz=setTimeout(()=>{
@@ -1744,6 +1896,12 @@ setTimeout(()=>{
     }
   });
 },4000);
+/* Offline, and new entries on the next open - see sw.js. Only over
+   https (or localhost, for testing); opened as a local file it simply
+   runs without one. */
+if('serviceWorker' in navigator && (location.protocol==='https:'||location.hostname==='localhost')){
+  addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
 let greeted=VIS();
 document.addEventListener('visibilitychange',()=>{
   if(!VIS()||greeted) return;

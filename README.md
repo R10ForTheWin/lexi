@@ -3,6 +3,21 @@
 A vocabulary trainer built as a single self-contained HTML file. No build step,
 no dependencies to install — open `lexi.html` and it runs.
 
+**Live:** <https://r10forthewin.github.io/lexi/>
+
+## On an iPhone
+
+Open the link in Safari, tap **Share → Add to Home Screen**, and from then on
+open Lexi from that icon rather than from Safari. It runs full screen, works
+with no signal, and — the part that matters — iOS leaves its saved progress
+alone. Progress kept in an ordinary Safari tab can be cleared after a week or
+so without a visit.
+
+The home-screen app and Safari keep **separate** progress, and deleting the
+icon deletes what it saved. Use *Your progress → Copy backup* at the bottom of
+the collection before moving phones or re-adding the icon; *Restore* merges a
+backup back in and never overwrites anything.
+
 ## What it does
 
 Four decks, each testing a different skill rather than mixing them into one
@@ -96,12 +111,35 @@ Everything is local to the browser, in `localStorage`:
 
 | Key | Holds |
 |---|---|
-| `lexi.ranks.v2` | current rank per entry |
+| `lexi.ranks.v3` | current rank per entry, by entry code |
 | `lexi.streak.v1` | the dates you completed a run |
 | `lexi.inbox.v1` | the queue of caught words |
 | `lexi.best.v1` | best run score, per deck |
-| `lexi.used.v1` | when you used a word, and where |
+| `lexi.used.v2` | when you used a word, and where, by entry code |
 | `lexi.classes.v1` | which classes the MBA deck is switched *off* for |
+
+Ranks and used-records are filed under each entry's **code** — its key in
+`E`, `P`, `C`, `M` or `Q` (`vaintoy`, `threec`) — not its title, so a title can
+be reworded without resetting anyone. Entries with no write-up yet file under
+their spelling squashed (`Sine qua non` → `sinequanon`); when one is written
+up, its rank follows it to its new code. The old title-keyed `lexi.ranks.v2`
+and `lexi.used.v1` are read once, re-filed, and left in place untouched.
+
+## Adding entries without costing anyone their streak
+
+Add the entry, commit, push. Pages redeploys in a minute and every phone picks
+it up on its next open with a connection — the service worker (`sw.js`) always
+tries the network for the app before falling back to its saved copy. Nothing in
+an update touches saved progress. The things that *would*:
+
+- **Changing an entry's code.** Rename titles freely; never rename a key.
+- **Renaming a storage key** in the table above without carrying the old one
+  across — read the old key and re-file it, as v2 → v3 does.
+- **Moving the site.** Progress belongs to `r10forthewin.github.io`. Renaming
+  the repo, changing host or adding a custom domain strands everyone's
+  progress at the old address.
+- **A wall row whose label differs from its entry's title.** They are joined by
+  spelling; keep them identical.
 
 The streak is stored as actual dates, never a counter — a counter cannot tell a
 missed day from a clock change, and would happily keep a streak you had broken.
