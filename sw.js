@@ -16,6 +16,7 @@ const CACHE='lexi-shell-v1';
 const SHELL=['./','lexi.html','manifest.webmanifest','icon-180.png','icon-192.png','icon-512.png'];
 const LIBS=[
   'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Draggable.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js',
   'https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap'
 ];

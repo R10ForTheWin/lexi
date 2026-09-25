@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@300;400;500&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/Draggable.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 /* ===============================================================
@@ -273,6 +274,18 @@ body{background:var(--paper); color:var(--text); font-family:'Archivo',system-ui
   transition:border-color .3s}
 .tile:hover:not(.used){border-color:var(--ultra)}
 .tile.used{opacity:.16; pointer-events:none}
+/* Letters are picked up, so the browser must not read the gesture as a
+   scroll - or as a text selection, the blue block on an i. */
+.slot,.tile{touch-action:none; -webkit-user-select:none; user-select:none; -webkit-touch-callout:none}
+.slot.has{cursor:grab}
+.slot.over{border-color:var(--amber)}
+.slot.lifting,.tile.lifting{color:transparent}
+.slot.landing,.tile.landing{color:transparent}
+.tile:disabled{cursor:default}
+.flyer.lifted{color:var(--text); cursor:grabbing; border-radius:10px;
+  background:color-mix(in srgb, var(--surface) 88%, transparent); box-shadow:var(--shadow)}
+#bankGo{margin-top:14px}
+#bankGo:disabled{visibility:hidden}
 .flyer{position:fixed; z-index:99; font-family:'Instrument Serif',Georgia,serif; font-size:22px;
   color:var(--ultra); pointer-events:none; display:grid; place-items:center}
 .type-in{width:100%; background:color-mix(in srgb, var(--surface) 74%, transparent);
@@ -842,6 +855,7 @@ function settle(sel,ms){
 /* One place decides how fast anything moves. Calm means slow, and it
    means sine/power easing \u2014 never a bounce, never an overshoot. */
 gsap.defaults({ease:'power2.out', duration:CALM?0.01:0.75});
+gsap.registerPlugin(Draggable);
 function rng(seed){let s=seed>>>0;return()=>((s=(s*1664525+1013904223)>>>0)/4294967296)}
 
 /* -- mural ---------------------------------------------------- */
@@ -1285,7 +1299,7 @@ function chrome(){
   });
 }
 function renderQ(){
-  locked=false; const q=QS[qi], hue=css(KIND[q.e.k].v);
+  locked=false; bankKey=null; const q=QS[qi], hue=css(KIND[q.e.k].v);
   $('#kindEl').textContent=q.kind; $('#tierEl').textContent=q.tier;
   $('#kindDot').style.background=hue; $('#tierEl').style.color=hue;
   chrome();
@@ -1321,25 +1335,13 @@ function renderQ(){
     opts.innerHTML=pair.map((o,i)=>`<button class="opt"><span class="k">${i+1}</span><span style="font-size:14px">${o}</span></button>`).join('');
     wire(o=>o===q.e.right,q);
   } else if(q.type==='bank'){
-    const w=q.e.t.toLowerCase(), letters=w.split('').sort(()=>Math.random()-.5);
+    const w=q.e.t.toLowerCase(), L=shuffle(w.split(''));
     card.innerHTML=shell(`<div class="label">${q.e.pos} &middot; build the word</div>
       <p class="defn">${q.e.d}</p>
-      <div class="slots" id="slots" style="margin-top:22px">${w.split('').map(()=>'<span class="slot"></span>').join('')}</div>`);
-    opts.innerHTML=`<div class="tiles" id="tiles">${letters.map(L=>`<button class="tile" data-l="${L}">${L}</button>`).join('')}</div>`;
-    let built=[]; const slots=()=>$$('#slots .slot');
-    $('#tiles').onclick=ev=>{
-      const t=ev.target.closest('.tile'); if(!t||locked||built.length>=w.length)return;
-      const s=slots()[built.length];
-      fly(t,s,t.dataset.l);                      /* the letter travels */
-      t.classList.add('used'); built.push(t.dataset.l); buzz(5);
-      if(built.length===w.length){
-        const ok=built.join('')===w;
-        gsap.delayedCall(CALM?0:.42,()=>{
-          slots().forEach((sl,i)=>{sl.classList.add(ok?'right':'wrong'); if(!ok)sl.textContent=w[i]});
-          judge(ok,q);
-        });
-      }
-    };
+      <div class="slots" id="slots" style="margin-top:22px">${w.split('').map((_,i)=>`<span class="slot" data-s="${i}"></span>`).join('')}</div>`);
+    opts.innerHTML=`<div class="tiles" id="tiles">${L.map((c,j)=>`<button class="tile" data-j="${j}">${c}</button>`).join('')}</div>
+      <button class="btn btn-go btn-sm" id="bankGo" disabled>Check</button>`;
+    bankWire(q,w,L);
   } else {
     /* Typed recall and Complete the set ask the same thing of the hand -
        one target, spelled from memory - so they share everything below
@@ -1383,17 +1385,140 @@ function renderQ(){
       {y:0,opacity:1,filter:'blur(0px)',duration:.8,stagger:.06},'-=.75');
   settle('#qCard .card, #qOpts .opt, #qOpts .tile, #qOpts .type-in, #qOpts .btn',2600);
 }
-/* a letter physically crossing from the bank to its slot */
-function fly(from,to,ch){
-  if(CALM){to.textContent=ch;to.classList.add('has');return}
-  const a=from.getBoundingClientRect(), b=to.getBoundingClientRect();
+/* -- the letter bank -------------------------------------------
+   It used to mark the word the instant the last slot filled, and a
+   placed letter could not be taken back - so a slip you noticed at the
+   ninth letter was already a wrong answer. Now nothing is final until
+   Check. A placed letter taps back to the tray; any letter drags to any
+   slot, and dropping on a filled one swaps the two.
+   The card clips its contents, so a letter in motion is never the real
+   element: a flyer at page level crosses over and the slot or tile
+   underneath simply changes. */
+let bankKey=null;
+function glide(from,toEl,ch,done){
+  const b=toEl.getBoundingClientRect();
+  if(!canMove()||!from){ done&&done(); return }
   const f=document.createElement('div');
   f.className='flyer'; f.textContent=ch;
-  Object.assign(f.style,{left:a.left+'px',top:a.top+'px',width:a.width+'px',height:a.height+'px'});
+  Object.assign(f.style,{left:from.left+'px',top:from.top+'px',width:from.width+'px',height:from.height+'px'});
   document.body.appendChild(f);
-  gsap.to(f,{left:b.left,top:b.top,width:b.width,height:b.height,duration:.4,ease:'power2.inOut',
-    onComplete(){f.remove(); to.textContent=ch; to.classList.add('has');
-      gsap.fromTo(to,{scale:.82},{scale:1,duration:.5,ease:'power2.out'})}});
+  toEl.classList.add('landing');
+  gsap.to(f,{left:b.left,top:b.top,width:b.width,height:b.height,duration:.42,ease:'power2.inOut',
+    onComplete(){ f.remove(); toEl.classList.remove('landing'); done&&done() }});
+  /* the ticker can stall in a hidden tab - never strand a letter mid-air */
+  setTimeout(()=>{ if(f.isConnected){ f.remove(); toEl.classList.remove('landing'); done&&done() } },900);
+}
+function bankWire(q,w,L){
+  const sl=Array(w.length).fill(null);          /* slot i holds tile index, or null */
+  const slotEls=$$('#slots .slot'), tileEls=$$('#tiles .tile'), go=$('#bankGo');
+  const full=()=>sl.every(x=>x!==null);
+  function sync(){
+    slotEls.forEach((el,i)=>{ el.textContent=sl[i]===null?'':L[sl[i]]; el.classList.toggle('has',sl[i]!==null) });
+    tileEls.forEach((el,j)=>el.classList.toggle('used',sl.includes(j)));
+    /* Its space is held from the start. A button that appeared would
+       push the tray up under the finger, and the click that follows the
+       last tap would land on Check before you had looked at the word. */
+    if(full()===go.disabled){
+      go.disabled=!full();
+      if(!go.disabled&&canMove()) gsap.fromTo(go,{opacity:0,y:8},{opacity:1,y:0,duration:.5});
+    }
+  }
+  const rectOf=el=>el.getBoundingClientRect();
+  /* every move is one of three: into a slot, between slots, back to the tray */
+  function place(j,i,from){
+    const prev=sl[i], was=sl.indexOf(j);
+    if(was===i){ glide(from,slotEls[i],L[j]); return }   /* put back where it was */
+    const prevRect=rectOf(slotEls[i]);
+    if(was>=0) sl[was]=prev;                     /* slot to slot: swap */
+    else if(prev!==null) sl[i]=null;             /* tray onto a filled slot: that one goes home */
+    sl[i]=j; sync(); buzz(5);
+    glide(from,slotEls[i],L[j]);
+    if(prev!==null) glide(prevRect, was>=0?slotEls[was]:tileEls[prev], L[prev]);
+  }
+  function unplace(i,from){
+    const j=sl[i]; if(j===null) return;
+    sl[i]=null; sync(); buzz(4);
+    glide(from||rectOf(slotEls[i]),tileEls[j],L[j]);
+  }
+  const firstEmpty=()=>sl.indexOf(null);
+  function check(){
+    if(locked||!full()) return;
+    const ok=sl.map(j=>L[j]).join('')===w;
+    go.remove();
+    tileEls.forEach(t=>t.disabled=true);
+    slotEls.forEach((el,i)=>{ el.classList.add(ok?'right':'wrong'); if(!ok) el.textContent=w[i] });
+    bankKey=null;
+    judge(ok,q);
+  }
+  go.onclick=check;
+
+  /* Tap or drag, decided by distance: under 6px it was a tap. The drag
+     itself is GSAP's Draggable on a flyer, started from the pointer that
+     is already down, so there is one gesture, not two. */
+  function press(ev,src){
+    if(locked||ev.button>0) return;
+    const fromSlot=src.classList.contains('slot');
+    const i=fromSlot?+src.dataset.s:-1, j=fromSlot?sl[i]:+src.dataset.j;
+    if(j===null||(!fromSlot&&sl.includes(j))) return;
+    const x0=ev.clientX, y0=ev.clientY;
+    let dragging=false, px=x0, py=y0;
+    const move=e=>{
+      px=e.clientX; py=e.clientY;               /* window coords, for elementFromPoint */
+      if(dragging||Math.hypot(px-x0,py-y0)<6) return;
+      dragging=true; lift(e);
+    };
+    const up=()=>{
+      removeEventListener('pointermove',move); removeEventListener('pointerup',up); removeEventListener('pointercancel',up);
+      if(dragging) return;
+      if(fromSlot) unplace(i);
+      else { const k=firstEmpty(); if(k>=0) place(j,k,rectOf(src)) }
+    };
+    addEventListener('pointermove',move); addEventListener('pointerup',up); addEventListener('pointercancel',up);
+    function lift(e){
+      const r=rectOf(src);
+      const f=document.createElement('div');
+      f.className='flyer lifted'; f.textContent=L[j];
+      Object.assign(f.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});
+      document.body.appendChild(f);
+      src.classList.add('lifting');
+      let over=null;
+      const hover=el=>{ if(over!==el){ over&&over.classList.remove('over'); over=el; el&&el.classList.add('over') } };
+      const under=()=>{ const el=document.elementFromPoint(px,py); return el&&el.closest('#slots .slot') };
+      const d=Draggable.create(f,{type:'x,y',
+        onDrag(){ hover(under()) },
+        onRelease(){
+          const t=under(); hover(null);
+          const at=rectOf(f); f.remove(); src.classList.remove('lifting');
+          this.kill();
+          if(locked) return;
+          if(t) place(j,+t.dataset.s,at);
+          else if(fromSlot) unplace(i,at);
+          else glide(at,src,L[j]);              /* dropped nowhere: it goes home */
+        }})[0];
+      if(!CALM) gsap.to(f,{scale:1.12,duration:.25,ease:'power2.out'});
+      d.startDrag(e);
+    }
+  }
+  $('#slots').onpointerdown=ev=>{ const s=ev.target.closest('.slot'); if(s&&s.classList.contains('has')) press(ev,s) };
+  $('#tiles').onpointerdown=ev=>{ const t=ev.target.closest('.tile'); if(t) press(ev,t) };
+  /* the keyboard gets the same verbs: type to place, Backspace to take
+     back the last, Enter to check */
+  bankKey=e=>{
+    if(e.key==='Enter'){ if(full()){ e.preventDefault(); check() } return true }
+    if(e.key==='Backspace'){
+      e.preventDefault();
+      for(let i=sl.length-1;i>=0;i--) if(sl[i]!==null){ unplace(i); break }
+      return true;
+    }
+    if(e.key.length===1&&/\p{L}/u.test(e.key)){
+      const k=firstEmpty(); if(k<0) return true;
+      const j=L.findIndex((c,j)=>c===e.key.toLowerCase()&&!sl.includes(j));
+      if(j>=0) place(j,k,rectOf(tileEls[j]));
+      return true;
+    }
+    return false;
+  };
+  sync();
 }
 function wire(isRight,q){
   $('#qOpts').onclick=ev=>{
@@ -1880,6 +2005,7 @@ document.addEventListener('keydown',e=>{
     if(e.key==='Enter'||e.key===' '){ e.preventDefault(); const b=$('#nextBtn'); b&&b.click() }
     return;
   }
+  if(bankKey&&bankKey(e)) return;
   const n=+e.key; if(n>=1&&n<=4){const o=$$('.opt')[n-1]; o&&o.click()}
 });
 paintWall(true);
