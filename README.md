@@ -61,7 +61,7 @@ framework's own legs:
 *Which lens* stays dormant while there are fewer than four frameworks, because
 picking between two is a coin toss. It switches itself on at the fourth.
 
-Two frameworks among fifteen entries would leave most runs with no framework
+Two frameworks among sixteen entries would leave most runs with no framework
 at all, so a run that draws none is dealt one. A deck called EMBA Forever that
 never asks an EMBA question is a deck that lied about its name.
 
